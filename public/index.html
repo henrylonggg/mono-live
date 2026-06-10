@@ -4,1370 +4,178 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Monopoly Live Bank</title>
-
   <style>
-    :root {
-      --red: #c62828;
-      --green: #0f7a3b;
-      --gold: #f6c344;
-      --cream: #fff3c9;
-      --paper: #fff9e8;
-      --ink: #151515;
-      --muted: #6e624b;
-      --shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
-      --safe: env(safe-area-inset-bottom, 0px);
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background:
-        radial-gradient(circle at top, rgba(246, 195, 68, 0.26), transparent 32%),
-        linear-gradient(180deg, #15582f, #062b17);
-      color: var(--ink);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
-    button,
-    input,
-    select {
-      font: inherit;
-    }
-
-    button {
-      border: 0;
-      cursor: pointer;
-    }
-
-    .app {
-      width: min(720px, 100%);
-      margin: 0 auto;
-      min-height: 100vh;
-      padding: 12px 12px calc(94px + var(--safe));
-    }
-
-    .top {
-      background: var(--red);
-      color: white;
-      border: 4px solid white;
-      border-radius: 22px;
-      padding: 16px 14px;
-      box-shadow: var(--shadow);
-      text-align: center;
-      margin-bottom: 12px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .top::before,
-    .top::after {
-      content: "$";
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 56px;
-      font-weight: 1000;
-      opacity: 0.16;
-    }
-
-    .top::before {
-      left: 18px;
-    }
-
-    .top::after {
-      right: 18px;
-    }
-
-    .top h1 {
-      margin: 0;
-      font-size: clamp(28px, 8vw, 44px);
-      line-height: 0.9;
-      text-transform: uppercase;
-      letter-spacing: -0.08em;
-    }
-
-    .top p {
-      margin: 8px 0 0;
-      color: rgba(255, 255, 255, 0.86);
-      font-size: 13px;
-      font-weight: 850;
-    }
-
-    .card,
-    .panel {
-      background: var(--paper);
-      border: 3px solid var(--ink);
-      border-radius: 20px;
-      box-shadow: var(--shadow);
-      margin-bottom: 12px;
-    }
-
-    .card {
-      padding: 14px;
-    }
-
-    .panel {
-      overflow: hidden;
-    }
-
-    .panel-head {
-      padding: 11px 12px;
-      background: var(--red);
-      color: white;
-      border-bottom: 3px solid var(--ink);
-      text-align: center;
-      font-weight: 1000;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    .panel-head.green {
-      background: var(--green);
-    }
-
-    .panel-head.gold {
-      background: var(--gold);
-      color: var(--ink);
-    }
-
-    .panel-body {
-      padding: 14px;
-    }
-
-    .grid {
-      display: grid;
-      gap: 10px;
-    }
-
-    .two {
-      grid-template-columns: 1fr 1fr;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 6px;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 1000;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    input,
-    select {
-      width: 100%;
-      min-height: 52px;
-      padding: 13px 14px;
-      border: 3px solid var(--ink);
-      border-radius: 15px;
-      background: white;
-      color: var(--ink);
-      outline: none;
-      font-weight: 850;
-      font-size: 16px;
-    }
-
-    .btn {
-      width: 100%;
-      min-height: 52px;
-      padding: 13px 14px;
-      border: 3px solid var(--ink);
-      border-radius: 15px;
-      background: var(--red);
-      color: white;
-      font-weight: 1000;
-      text-transform: uppercase;
-      box-shadow: 0 5px 0 var(--ink);
-    }
-
-    .btn:active {
-      transform: translateY(4px);
-      box-shadow: 0 1px 0 var(--ink);
-    }
-
-    .btn.green {
-      background: var(--green);
-    }
-
-    .btn.gold {
-      background: var(--gold);
-      color: var(--ink);
-    }
-
-    .btn.white {
-      background: white;
-      color: var(--ink);
-    }
-
-    .btn.small {
-      min-height: 38px;
-      padding: 8px 10px;
-      font-size: 12px;
-      box-shadow: 0 3px 0 var(--ink);
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    .notice {
-      padding: 11px;
-      border: 3px dashed var(--ink);
-      border-radius: 15px;
-      background: #fff0b3;
-      color: var(--ink);
-      font-size: 13px;
-      font-weight: 800;
-      line-height: 1.35;
-    }
-
-    .room-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .code {
-      color: var(--red);
-      font-size: 31px;
-      font-weight: 1000;
-      letter-spacing: 0.09em;
-      line-height: 1;
-    }
-
-    .stat-main {
-      background: linear-gradient(135deg, var(--green), #06381d);
-      border-color: white;
-      color: white;
-    }
-
-    .label-light {
-      color: rgba(255, 255, 255, 0.78);
-      font-size: 12px;
-      text-transform: uppercase;
-      font-weight: 1000;
-      letter-spacing: 0.05em;
-    }
-
-    .big-stat {
-      margin: 5px 0 0;
-      font-size: 42px;
-      line-height: 0.96;
-      font-weight: 1000;
-      letter-spacing: -0.08em;
-    }
-
-    .role {
-      margin-top: 6px;
-      color: rgba(255, 255, 255, 0.78);
-      font-size: 13px;
-      font-weight: 800;
-    }
-
-    .quick-stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-
-    .mini-stat {
-      background: white;
-      border: 3px solid var(--ink);
-      border-radius: 17px;
-      padding: 11px;
-      text-align: center;
-      box-shadow: 0 4px 0 var(--ink);
-    }
-
-    .mini-stat .num {
-      display: block;
-      color: var(--green);
-      font-size: 26px;
-      line-height: 1;
-      font-weight: 1000;
-      letter-spacing: -0.05em;
-    }
-
-    .mini-stat .txt {
-      margin-top: 4px;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 900;
-      text-transform: uppercase;
-    }
-
-    .action-card {
-      background: white;
-      border: 3px solid var(--ink);
-      border-radius: 18px;
-      padding: 13px;
-      box-shadow: 0 4px 0 var(--ink);
-      margin-bottom: 12px;
-    }
-
-    .action-title {
-      margin: 0 0 4px;
-      color: var(--red);
-      font-size: 19px;
-      font-weight: 1000;
-      letter-spacing: -0.04em;
-    }
-
-    .action-text {
-      margin: 0;
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 800;
-      line-height: 1.35;
-    }
-
-    .players-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
-    }
-
-    .player-card {
-      background: white;
-      border: 3px solid var(--ink);
-      border-radius: 18px;
-      padding: 11px;
-      text-align: center;
-      box-shadow: 0 4px 0 var(--ink);
-      min-width: 0;
-    }
-
-    .player-card.active {
-      background: var(--gold);
-    }
-
-    .avatar {
-      width: 56px;
-      height: 56px;
-      border: 3px solid var(--ink);
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      margin: 0 auto 8px;
-      color: white;
-      font-weight: 1000;
-      font-size: 18px;
-    }
-
-    .player-name {
-      font-weight: 1000;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .player-sub {
-      margin-top: 3px;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 850;
-    }
-
-    .tag {
-      display: inline-flex;
-      padding: 3px 7px;
-      border: 2px solid var(--ink);
-      border-radius: 999px;
-      background: var(--cream);
-      color: var(--ink);
-      font-size: 10px;
-      font-weight: 1000;
-      text-transform: uppercase;
-      margin-top: 6px;
-    }
-
-    .tag.banker {
-      background: var(--gold);
-    }
-
-    .tag.turn {
-      background: var(--green);
-      color: white;
-    }
-
-    .tag.offline {
-      background: #ddd;
-      color: #333;
-    }
-
-    .deed-grid {
-      display: grid;
-      gap: 12px;
-    }
-
-    .deed-card {
-      background: white;
-      border: 3px solid var(--ink);
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 4px 0 var(--ink);
-    }
-
-    .deed-color {
-      height: 20px;
-      border-bottom: 3px solid var(--ink);
-    }
-
-    .deed-body {
-      padding: 12px;
-    }
-
-    .deed-title {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      align-items: flex-start;
-    }
-
-    .deed-title strong {
-      font-size: 16px;
-    }
-
-    .deed-price {
-      color: var(--green);
-      font-weight: 1000;
-      white-space: nowrap;
-    }
-
-    .deed-meta {
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 850;
-      line-height: 1.35;
-      margin-top: 4px;
-    }
-
-    .deed-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    .house-row {
-      display: flex;
-      gap: 4px;
-      align-items: center;
-      margin-top: 8px;
-    }
-
-    .house {
-      width: 14px;
-      height: 12px;
-      background: #16a34a;
-      border: 2px solid var(--ink);
-      border-radius: 3px;
-    }
-
-    .hotel {
-      width: 28px;
-      height: 18px;
-      background: #c62828;
-      border: 2px solid var(--ink);
-      border-radius: 4px;
-    }
-
-    .rent-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-      background: white;
-      border: 3px solid var(--ink);
-    }
-
-    .rent-table td {
-      border-bottom: 2px solid var(--ink);
-      padding: 6px;
-      font-size: 13px;
-      font-weight: 850;
-    }
-
-    .rent-table tr:last-child td {
-      border-bottom: 0;
-    }
-
-    .rent-table td:last-child {
-      text-align: right;
-      font-weight: 1000;
-    }
-
-    .filters {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .request-card,
-    .log-item {
-      background: white;
-      border: 3px solid var(--ink);
-      border-radius: 14px;
-      padding: 10px;
-      font-size: 13px;
-      font-weight: 750;
-      line-height: 1.35;
-    }
-
-    .request-card {
-      display: grid;
-      gap: 8px;
-    }
-
-    .log {
-      display: grid;
-      gap: 8px;
-      max-height: 430px;
-      overflow: auto;
-      padding-bottom: 4px;
-    }
-
-    .bottom-nav {
-      position: fixed;
-      left: 50%;
-      bottom: 0;
-      transform: translateX(-50%);
-      width: min(720px, 100%);
-      padding: 8px 10px calc(8px + var(--safe));
-      background: rgba(6, 43, 23, 0.92);
-      backdrop-filter: blur(12px);
-      border-top: 3px solid rgba(255, 255, 255, 0.22);
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 6px;
-      z-index: 20;
-    }
-
-    .tab {
-      min-height: 52px;
-      border: 3px solid var(--ink);
-      border-radius: 15px;
-      background: var(--cream);
-      color: var(--ink);
-      font-size: 11px;
-      font-weight: 1000;
-      box-shadow: 0 3px 0 var(--ink);
-    }
-
-    .tab.active {
-      background: var(--gold);
-    }
-
-    @media (min-width: 680px) {
-      .players-grid {
-        grid-template-columns: repeat(4, 1fr);
-      }
-
-      .deed-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 420px) {
-      .app {
-        padding-left: 10px;
-        padding-right: 10px;
-      }
-
-      .two {
-        grid-template-columns: 1fr;
-      }
-
-      .filters {
-        grid-template-columns: 1fr;
-      }
-
-      .big-stat {
-        font-size: 36px;
-      }
-
-      .tab {
-        font-size: 10px;
-      }
-
-      .deed-actions {
-        grid-template-columns: 1fr;
-      }
-    }
+    :root{--red:#c62828;--green:#0f7a3b;--gold:#f6c344;--cream:#fff3c9;--paper:#fff9e8;--ink:#151515;--muted:#6e624b;--shadow:0 14px 34px rgba(0,0,0,.3);--safe:env(safe-area-inset-bottom,0px)}
+    *{box-sizing:border-box} body{margin:0;min-height:100vh;background:radial-gradient(circle at top,rgba(246,195,68,.26),transparent 32%),linear-gradient(180deg,#15582f,#062b17);color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif} button,input,select{font:inherit} button{border:0;cursor:pointer}.app{width:min(720px,100%);margin:0 auto;min-height:100vh;padding:12px 12px calc(94px + var(--safe))}.top{background:var(--red);color:#fff;border:4px solid #fff;border-radius:22px;padding:16px 14px;box-shadow:var(--shadow);text-align:center;margin-bottom:12px;position:relative;overflow:hidden}.top:before,.top:after{content:"$";position:absolute;top:50%;transform:translateY(-50%);font-size:56px;font-weight:1000;opacity:.16}.top:before{left:18px}.top:after{right:18px}.top h1{margin:0;font-size:clamp(28px,8vw,44px);line-height:.9;text-transform:uppercase;letter-spacing:-.08em}.top p{margin:8px 0 0;color:rgba(255,255,255,.86);font-size:13px;font-weight:850}.card,.panel{background:var(--paper);border:3px solid var(--ink);border-radius:20px;box-shadow:var(--shadow);margin-bottom:12px}.card{padding:14px}.panel{overflow:hidden}.panel-head{padding:11px 12px;background:var(--red);color:#fff;border-bottom:3px solid var(--ink);text-align:center;font-weight:1000;text-transform:uppercase;letter-spacing:.04em}.panel-head.green{background:var(--green)}.panel-head.gold{background:var(--gold);color:var(--ink)}.panel-body{padding:14px}.grid{display:grid;gap:10px}.two{grid-template-columns:1fr 1fr}.three{grid-template-columns:repeat(3,1fr)}label{display:block;margin-bottom:6px;color:var(--muted);font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.04em}input,select{width:100%;min-height:52px;padding:13px 14px;border:3px solid var(--ink);border-radius:15px;background:#fff;color:var(--ink);outline:none;font-weight:850;font-size:16px}.btn{width:100%;min-height:52px;padding:13px 14px;border:3px solid var(--ink);border-radius:15px;background:var(--red);color:#fff;font-weight:1000;text-transform:uppercase;box-shadow:0 5px 0 var(--ink)}.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}.btn.green{background:var(--green)}.btn.gold{background:var(--gold);color:var(--ink)}.btn.white{background:#fff;color:var(--ink)}.btn.small{min-height:38px;padding:8px 10px;font-size:12px;box-shadow:0 3px 0 var(--ink)}.hidden{display:none!important}.notice{padding:11px;border:3px dashed var(--ink);border-radius:15px;background:#fff0b3;color:var(--ink);font-size:13px;font-weight:800;line-height:1.35}.room-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.code{color:var(--red);font-size:31px;font-weight:1000;letter-spacing:.09em;line-height:1}.stat-main{background:linear-gradient(135deg,var(--green),#06381d);border-color:#fff;color:#fff}.label-light{color:rgba(255,255,255,.78);font-size:12px;text-transform:uppercase;font-weight:1000;letter-spacing:.05em}.big-stat{margin:5px 0 0;font-size:42px;line-height:.96;font-weight:1000;letter-spacing:-.08em}.role{margin-top:6px;color:rgba(255,255,255,.78);font-size:13px;font-weight:800}.quick-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}.mini-stat{background:#fff;border:3px solid var(--ink);border-radius:17px;padding:11px;text-align:center;box-shadow:0 4px 0 var(--ink)}.mini-stat .num{display:block;color:var(--green);font-size:26px;line-height:1;font-weight:1000;letter-spacing:-.05em}.mini-stat .txt{margin-top:4px;color:var(--muted);font-size:12px;font-weight:900;text-transform:uppercase}.action-card{background:#fff;border:3px solid var(--ink);border-radius:18px;padding:13px;box-shadow:0 4px 0 var(--ink);margin-bottom:12px}.action-title{margin:0 0 4px;color:var(--red);font-size:19px;font-weight:1000;letter-spacing:-.04em}.action-text{margin:0;color:var(--muted);font-size:13px;font-weight:800;line-height:1.35}.players-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.player-card{background:#fff;border:3px solid var(--ink);border-radius:18px;padding:11px;text-align:center;box-shadow:0 4px 0 var(--ink);min-width:0}.player-card.active{background:var(--gold)}.avatar{width:56px;height:56px;border:3px solid var(--ink);border-radius:50%;display:grid;place-items:center;margin:0 auto 8px;color:#fff;font-weight:1000;font-size:18px}.player-name{font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.player-sub{margin-top:3px;color:var(--muted);font-size:12px;font-weight:850}.tag{display:inline-flex;padding:3px 7px;border:2px solid var(--ink);border-radius:999px;background:var(--cream);color:var(--ink);font-size:10px;font-weight:1000;text-transform:uppercase;margin-top:6px}.tag.banker{background:var(--gold)}.tag.turn{background:var(--green);color:#fff}.tag.offline{background:#ddd;color:#333}.deed-grid{display:grid;gap:12px}.deed-card{background:#fff;border:3px solid var(--ink);border-radius:16px;overflow:hidden;box-shadow:0 4px 0 var(--ink)}.deed-color{height:20px;border-bottom:3px solid var(--ink)}.deed-body{padding:12px}.deed-title{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.deed-title strong{font-size:16px}.deed-price{color:var(--green);font-weight:1000;white-space:nowrap}.deed-meta{color:var(--muted);font-size:12px;font-weight:850;line-height:1.35;margin-top:4px}.deed-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.house-row{display:flex;gap:4px;align-items:center;margin-top:8px}.house{width:14px;height:12px;background:#16a34a;border:2px solid var(--ink);border-radius:3px}.hotel{width:28px;height:18px;background:#c62828;border:2px solid var(--ink);border-radius:4px}.rent-table{width:100%;border-collapse:collapse;margin-top:10px;background:#fff;border:3px solid var(--ink)}.rent-table td{border-bottom:2px solid var(--ink);padding:6px;font-size:13px;font-weight:850}.rent-table tr:last-child td{border-bottom:0}.rent-table td:last-child{text-align:right;font-weight:1000}.filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}.request-card,.log-item{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:10px;font-size:13px;font-weight:750;line-height:1.35}.request-card{display:grid;gap:8px}.log{display:grid;gap:8px;max-height:430px;overflow:auto;padding-bottom:4px}.trade-hero{background:linear-gradient(135deg,#101827,#26384f);color:#fff;border:3px solid #fff;border-radius:20px;padding:14px;box-shadow:0 5px 0 var(--ink);margin-bottom:12px}.trade-hero h2{margin:0;font-size:26px;letter-spacing:-.06em;line-height:1}.trade-hero p{margin:6px 0 0;color:rgba(255,255,255,.78);font-size:13px;font-weight:800}.trade-board{display:grid;gap:12px}.trade-side{background:#fff;border:3px solid var(--ink);border-radius:18px;padding:12px;box-shadow:0 4px 0 var(--ink)}.trade-side h3{margin:0 0 10px;font-size:18px;letter-spacing:-.04em}.trade-side.give h3{color:var(--red)}.trade-side.get h3{color:var(--green)}.money-pill{display:flex;align-items:center;gap:8px;background:var(--cream);border:3px solid var(--ink);border-radius:16px;padding:10px;margin-bottom:10px}.money-pill span{font-weight:1000;color:var(--muted);text-transform:uppercase;font-size:12px;white-space:nowrap}.money-pill input{min-height:44px;border-width:2px}.deed-picker{display:grid;gap:7px;max-height:320px;overflow:auto;padding:2px}.pick-deed{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;background:#fff;border:2px solid var(--ink);border-radius:13px;padding:8px;font-size:12px;font-weight:900}.pick-deed input{width:22px;min-height:22px;padding:0}.pick-color{width:8px;align-self:stretch;border:2px solid var(--ink);border-radius:999px}.pick-name{min-width:0}.pick-name strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pick-name span{display:block;color:var(--muted);font-size:11px}.pick-price{font-weight:1000;color:var(--green)}.analyzer{background:#fff;border:4px solid var(--ink);border-radius:22px;padding:14px;box-shadow:0 5px 0 var(--ink)}.score-top{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center}.score-circle{width:86px;height:86px;border:5px solid var(--ink);border-radius:50%;display:grid;place-items:center;background:var(--gold);font-size:25px;font-weight:1000;letter-spacing:-.06em}.score-title{font-size:24px;font-weight:1000;letter-spacing:-.06em;line-height:1}.score-title.good{color:var(--green)}.score-title.bad{color:var(--red)}.score-sub{color:var(--muted);font-size:13px;font-weight:850;margin-top:4px}.score-bar{height:16px;background:#eee;border:3px solid var(--ink);border-radius:999px;overflow:hidden;margin:12px 0}.score-fill{height:100%;background:linear-gradient(90deg,#c62828,#f6c344,#0f7a3b);width:50%}.analyzer-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}.analyzer-stat{background:var(--cream);border:2px solid var(--ink);border-radius:13px;padding:8px;text-align:center}.analyzer-stat strong{display:block;font-size:17px}.analyzer-stat span{display:block;color:var(--muted);font-size:10px;font-weight:1000;text-transform:uppercase}.why-list{display:grid;gap:6px}.why-item{background:#fff;border:2px dashed rgba(21,21,21,.35);border-radius:12px;padding:8px;font-size:12px;font-weight:850;line-height:1.25}.why-item.plus{background:#ecfdf3}.why-item.minus{background:#fff1f1}.offer-card{background:#fff;border:3px solid var(--ink);border-radius:16px;padding:11px;box-shadow:0 4px 0 var(--ink);display:grid;gap:8px}.offer-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.offer-head strong{font-size:15px}.offer-score{border:2px solid var(--ink);border-radius:999px;background:var(--gold);padding:4px 8px;font-size:12px;font-weight:1000;white-space:nowrap}.trade-chip-row{display:flex;flex-wrap:wrap;gap:5px}.trade-chip{background:var(--cream);border:2px solid var(--ink);border-radius:999px;padding:4px 7px;font-size:11px;font-weight:900}@media (min-width:680px){.trade-board{grid-template-columns:1fr 1fr}.analyzer{grid-column:1/-1}}@media (max-width:420px){.score-top{grid-template-columns:1fr;text-align:center}.score-circle{margin:0 auto}.analyzer-grid{grid-template-columns:1fr}.trade-side{padding:10px}.bottom-nav{gap:4px}.tab{font-size:9px;padding:4px 2px}}.bottom-nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(720px,100%);padding:8px 10px calc(8px + var(--safe));background:rgba(6,43,23,.92);backdrop-filter:blur(12px);border-top:3px solid rgba(255,255,255,.22);display:grid;grid-template-columns:repeat(6,1fr);gap:5px;z-index:20}.tab{min-height:52px;border:3px solid var(--ink);border-radius:15px;background:var(--cream);color:var(--ink);font-size:11px;font-weight:1000;box-shadow:0 3px 0 var(--ink)}.tab.active{background:var(--gold)}@media (min-width:680px){.players-grid{grid-template-columns:repeat(4,1fr)}.deed-grid{grid-template-columns:repeat(2,1fr)}}@media (max-width:420px){.app{padding-left:10px;padding-right:10px}.two,.three{grid-template-columns:1fr}.filters{grid-template-columns:1fr}.big-stat{font-size:36px}.tab{font-size:10px}.deed-actions{grid-template-columns:1fr}.quick-stats{grid-template-columns:1fr 1fr}}
   </style>
 </head>
-
 <body>
   <div class="app">
-    <header class="top">
-      <h1>Monopoly Live</h1>
-      <p>Mobile banking and title deeds</p>
-    </header>
+    <header class="top"><h1>Monopoly Live</h1><p>Mobile banking and title deeds</p></header>
 
     <main id="joinScreen">
       <section class="panel">
         <div class="panel-head">Create or Join</div>
         <div class="panel-body grid">
-          <div>
-            <label>Your Name</label>
-            <input id="nameInput" maxlength="18" placeholder="Example: Henry" />
-          </div>
-
-          <div>
-            <label>Token Color</label>
-            <select id="colorInput">
-              <option value="#c62828">Red</option>
-              <option value="#0f7a3b">Green</option>
-              <option value="#1f6feb">Blue</option>
-              <option value="#f6c344">Gold</option>
-              <option value="#7b2cbf">Purple</option>
-              <option value="#111111">Black</option>
-            </select>
-          </div>
-
+          <div><label>Your Name</label><input id="nameInput" maxlength="18" placeholder="Example: Henry" /></div>
+          <div><label>Token Color</label><select id="colorInput"><option value="#c62828">Red</option><option value="#0f7a3b">Green</option><option value="#1f6feb">Blue</option><option value="#f6c344">Gold</option><option value="#7b2cbf">Purple</option><option value="#111111">Black</option></select></div>
           <button class="btn green" onclick="createRoom()">Create Room</button>
-
-          <div class="notice">
-            The room creator is the banker. Players can request to buy title deeds, but the banker must approve each purchase.
-          </div>
-
-          <div>
-            <label>Access Code</label>
-            <input id="codeInput" maxlength="6" placeholder="Enter code" />
-          </div>
-
+          <div class="notice">The room creator is the banker. Players can request to buy title deeds, but the banker must approve each purchase.</div>
+          <div><label>Access Code</label><input id="codeInput" maxlength="6" placeholder="Enter code" /></div>
           <button class="btn white" onclick="joinRoom()">Join Room</button>
         </div>
       </section>
     </main>
 
     <main id="gameScreen" class="hidden">
-      <section class="card">
-        <div class="room-row">
-          <div>
-            <div class="player-sub">Access Code</div>
-            <div class="code" id="roomCode">------</div>
-          </div>
-          <button class="btn small gold" onclick="copyCode()">Copy</button>
-        </div>
-      </section>
-
-      <section class="card stat-main">
-        <div class="label-light">Your Cash</div>
-        <div class="big-stat" id="myMoney">$0</div>
-        <div class="role" id="myRole">Player</div>
-      </section>
-
-      <section class="quick-stats">
-        <div class="mini-stat">
-          <span class="num" id="myPaid">$0</span>
-          <span class="txt">Paid</span>
-        </div>
-        <div class="mini-stat">
-          <span class="num" id="myReceived">$0</span>
-          <span class="txt">Received</span>
-        </div>
-      </section>
-
-      <section class="action-card">
-        <h3 class="action-title" id="actionTitle">Ready</h3>
-        <p class="action-text" id="actionText">View title deeds, request purchases, or pay rent.</p>
-      </section>
+      <section class="card"><div class="room-row"><div><div class="player-sub">Access Code</div><div class="code" id="roomCode">------</div></div><button class="btn small gold" onclick="copyCode()">Copy</button></div></section>
+      <section class="card stat-main"><div class="label-light">Your Cash</div><div class="big-stat" id="myMoney">$0</div><div class="role" id="myRole">Player</div></section>
+      <section class="quick-stats"><div class="mini-stat"><span class="num" id="myPaid">$0</span><span class="txt">Paid</span></div><div class="mini-stat"><span class="num" id="myReceived">$0</span><span class="txt">Received</span></div></section>
+      <section class="action-card"><h3 class="action-title" id="actionTitle">Ready</h3><p class="action-text" id="actionText">View title deeds, request purchases, or pay rent.</p></section>
 
       <section id="playersTab" class="tabPage">
-        <div class="panel">
-          <div class="panel-head green">Players</div>
-          <div class="panel-body">
-            <div class="players-grid" id="players"></div>
-          </div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-head" id="profileTitle">Player Details</div>
-          <div class="panel-body" id="profile"></div>
-        </div>
+        <div class="panel"><div class="panel-head green">Players</div><div class="panel-body"><div class="players-grid" id="players"></div></div></div>
+        <div class="panel"><div class="panel-head" id="profileTitle">Player Details</div><div class="panel-body" id="profile"></div></div>
       </section>
 
       <section id="deedsTab" class="tabPage hidden">
-        <div class="panel">
-          <div class="panel-head gold">All Title Deeds</div>
-          <div class="panel-body">
-            <div class="filters">
-              <select id="ownerFilter" onchange="renderDeeds()">
-                <option value="all">All deeds</option>
-                <option value="available">Available only</option>
-                <option value="mine">Mine only</option>
-              </select>
-
-              <select id="groupFilter" onchange="renderDeeds()">
-                <option value="all">All colors</option>
-              </select>
-            </div>
-
-            <div class="deed-grid" id="deeds"></div>
-          </div>
-        </div>
+        <div class="panel"><div class="panel-head gold">All Title Deeds</div><div class="panel-body">
+          <div class="filters"><select id="ownerFilter" onchange="renderDeeds()"><option value="all">All deeds</option><option value="available">Available only</option><option value="mine">Mine only</option></select><select id="groupFilter" onchange="renderDeeds()"><option value="all">All colors</option></select></div>
+          <div class="deed-grid" id="deeds"></div>
+        </div></div>
       </section>
 
       <section id="payTab" class="tabPage hidden">
-        <div class="panel">
-          <div class="panel-head">Pay Money</div>
-          <div class="panel-body grid">
-            <div>
-              <label>Pay Player</label>
-              <select id="payTarget"></select>
-            </div>
-
-            <div>
-              <label>Amount</label>
-              <input id="payAmount" type="number" min="1" placeholder="Example: 50" inputmode="numeric" />
-            </div>
-
-            <div>
-              <label>Reason Optional</label>
-              <input id="payNote" maxlength="60" placeholder="Rent, deal, correction..." />
-            </div>
-
-            <button class="btn green" onclick="payPlayer()">Send Payment</button>
+        <div class="panel"><div class="panel-head">Pay Money</div><div class="panel-body grid">
+          <div><label>Pay Player</label><select id="payTarget"></select></div>
+          <div><label>Amount</label><input id="payAmount" type="number" min="1" placeholder="Example: 50" inputmode="numeric" /></div>
+          <div><label>Reason Optional</label><input id="payNote" maxlength="60" placeholder="Rent, deal, correction..." /></div>
+          <button class="btn green" onclick="payPlayer()">Send Payment</button>
+        </div></div>
+        <div class="panel"><div class="panel-head gold">Taxes / Jail / Free Parking</div><div class="panel-body grid">
+          <div><label>Custom Free Parking Amount</label><input id="bankPayAmount" type="number" min="1" placeholder="Example: 200" inputmode="numeric" /></div>
+          <button class="btn gold" onclick="payFreeParking()">Pay Custom Amount Into Free Parking</button>
+          <div class="two grid">
+            <button class="btn white" onclick="payIncomeTax()">Income Tax $200</button>
+            <button class="btn white" onclick="payLuxuryTax()">Luxury Tax $100</button>
           </div>
-        </div>
+          <button class="btn white" onclick="payJailFee()">Pay $50 to Get Out of Jail</button>
+          <div class="notice">Taxes and jail fees go into Free Parking. Free Parking: <strong id="freeParking">$100</strong></div>
+          <button class="btn gold" onclick="collectFreeParking()">Request Free Parking Collection</button>
+          <div class="notice">The banker must approve Free Parking before the money is added to your account.</div>
+        </div></div>
+        <div class="panel"><div class="panel-head green">Turn Control</div><div class="panel-body grid"><div class="notice">Current turn: <strong id="turnName">-</strong></div><button class="btn white" onclick="endTurn()">Next Turn</button></div></div>
+      </section>
 
-        <div class="panel">
-          <div class="panel-head gold">Bank / Taxes / Jail</div>
-          <div class="panel-body grid">
-            <div>
-              <label>Amount</label>
-              <input id="bankPayAmount" type="number" min="1" placeholder="Example: 200" inputmode="numeric" />
-            </div>
-
-            <button class="btn white" onclick="payBank()">Pay Bank</button>
-            <button class="btn gold" onclick="payFreeParking()">Pay Custom Amount Into Free Parking</button>
-
-            <div class="notice">
-              Free Parking: <strong id="freeParking">$100</strong>
-            </div>
-
-            <button class="btn gold" onclick="collectFreeParking()">Request Free Parking</button>
-            <button class="btn white" onclick="payJailFee()">Pay $50 To Get Out Of Jail</button>
-            <button class="btn white" onclick="payIncomeTax()">Pay Income Tax $200</button>
-            <button class="btn white" onclick="payLuxuryTax()">Pay Luxury Tax $100</button>
-
-            <div class="notice">
-              Jail fees and taxes go directly into Free Parking. Collecting Free Parking requires banker approval.
-            </div>
+      <section id="tradesTab" class="tabPage hidden">
+        <div class="trade-hero"><h2>Trade Center</h2><p>Build a deal, check the smart analyzer, then send it live.</p></div>
+        <div class="panel"><div class="panel-head gold">Build Trade</div><div class="panel-body grid">
+          <div><label>Trade With</label><select id="tradePlayer" onchange="renderTrades()"></select></div>
+          <div class="trade-board">
+            <div class="trade-side give"><h3>You Give</h3><div class="money-pill"><span>Cash</span><input id="tradeGiveMoney" type="number" min="0" value="0" inputmode="numeric" oninput="renderTradeAnalyzer()"></div><div class="deed-picker" id="tradeGiveDeeds"></div></div>
+            <div class="trade-side get"><h3>You Receive</h3><div class="money-pill"><span>Cash</span><input id="tradeReceiveMoney" type="number" min="0" value="0" inputmode="numeric" oninput="renderTradeAnalyzer()"></div><div class="deed-picker" id="tradeReceiveDeeds"></div></div>
+            <div class="analyzer" id="tradeAnalyzer"></div>
           </div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-head green">Turn Control</div>
-          <div class="panel-body grid">
-            <div class="notice">
-              Current turn: <strong id="turnName">-</strong>
-            </div>
-            <button class="btn white" onclick="endTurn()">Next Turn</button>
-          </div>
-        </div>
+          <button class="btn green" onclick="sendTradeOffer()">Send Trade Offer</button>
+        </div></div>
+        <div class="panel"><div class="panel-head green">Incoming Offers</div><div class="panel-body grid" id="incomingTrades"></div></div>
+        <div class="panel"><div class="panel-head">Outgoing Offers</div><div class="panel-body grid" id="outgoingTrades"></div></div>
       </section>
 
       <section id="bankTab" class="tabPage hidden">
-        <div class="panel" id="bankerControls">
-          <div class="panel-head">Banker Controls</div>
-          <div class="panel-body grid">
-            <div id="purchaseRequests" class="grid"></div>
-            <div id="freeParkingRequests" class="grid"></div>
-
-            <div>
-              <label>Player</label>
-              <select id="bankerPlayer"></select>
-            </div>
-
-            <div>
-              <label>Amount</label>
-              <input id="bankerAmount" type="number" min="1" placeholder="Example: 100" inputmode="numeric" />
-            </div>
-
-            <button class="btn green" onclick="bankerAdjust('add')">Give Money</button>
-            <button class="btn white" onclick="bankerAdjust('remove')">Remove Money</button>
-
-            <div>
-              <label>Starting Money</label>
-              <input id="startingMoney" type="number" min="1" value="1500" inputmode="numeric" />
-            </div>
-
-            <button class="btn gold" onclick="setStartingMoney()">Set Everyone's Money</button>
-            <button class="btn white" onclick="bankerSetTurn()">Set Turn To Player</button>
-            <button class="btn" onclick="bankerResetRoom()">Reset Whole Room</button>
-          </div>
-        </div>
-
-        <div class="panel" id="notBankerNotice">
-          <div class="panel-head gold">Banker Only</div>
-          <div class="panel-body">
-            <div class="notice">
-              Only the room creator can approve deed purchases, approve Free Parking, and use banker controls.
-            </div>
-          </div>
-        </div>
+        <div class="panel" id="bankerControls"><div class="panel-head">Banker Controls</div><div class="panel-body grid">
+          <div id="purchaseRequests" class="grid"></div>
+          <div id="freeParkingRequests" class="grid"></div>
+          <div><label>Player</label><select id="bankerPlayer"></select></div><div><label>Amount</label><input id="bankerAmount" type="number" min="1" placeholder="Example: 100" inputmode="numeric" /></div>
+          <button class="btn green" onclick="bankerAdjust('add')">Give Money</button><button class="btn white" onclick="bankerAdjust('remove')">Remove Money</button>
+          <div><label>Starting Money</label><input id="startingMoney" type="number" min="1" value="1500" inputmode="numeric" /></div><button class="btn gold" onclick="setStartingMoney()">Set Everyone's Money</button>
+          <button class="btn white" onclick="bankerSetTurn()">Set Turn to Player</button><button class="btn" onclick="bankerResetRoom()">Reset Whole Room</button>
+        </div></div>
+        <div class="panel" id="notBankerNotice"><div class="panel-head gold">Banker Only</div><div class="panel-body"><div class="notice">Only the room creator can approve deed purchases and use banker controls.</div></div></div>
       </section>
 
-      <section id="logTab" class="tabPage hidden">
-        <div class="panel">
-          <div class="panel-head green">Game Log</div>
-          <div class="panel-body">
-            <div class="log" id="log"></div>
-          </div>
-        </div>
-      </section>
+      <section id="logTab" class="tabPage hidden"><div class="panel"><div class="panel-head green">Game Log</div><div class="panel-body"><div class="log" id="log"></div></div></div></section>
     </main>
   </div>
 
-  <nav class="bottom-nav hidden" id="bottomNav">
-    <button class="tab active" onclick="setTab('players')">Players</button>
-    <button class="tab" onclick="setTab('deeds')">Deeds</button>
-    <button class="tab" onclick="setTab('pay')">Pay</button>
-    <button class="tab" onclick="setTab('bank')">Bank</button>
-    <button class="tab" onclick="setTab('log')">Log</button>
-  </nav>
+  <nav class="bottom-nav hidden" id="bottomNav"><button class="tab active" onclick="setTab('players')">Players</button><button class="tab" onclick="setTab('deeds')">Deeds</button><button class="tab" onclick="setTab('pay')">Pay</button><button class="tab" onclick="setTab('trades')">Trades</button><button class="tab" onclick="setTab('bank')">Bank</button><button class="tab" onclick="setTab('log')">Log</button></nav>
 
   <script src="/socket.io/socket.io.js"></script>
-
   <script>
-    const socket = io();
-    const $ = id => document.getElementById(id);
-
-    let state = null;
-    let deeds = [];
-    let meId = sessionStorage.getItem('monopolyPlayerId');
-    let roomCode = sessionStorage.getItem('monopolyRoomCode');
-    let selectedPlayerId = meId;
-
+    const socket = io(); const $ = id => document.getElementById(id);
+    let state = null, deeds = [], meId = sessionStorage.getItem('monopolyPlayerId'), roomCode = sessionStorage.getItem('monopolyRoomCode'), selectedPlayerId = meId;
     const money = n => '$' + Number(n || 0).toLocaleString();
-
-    function me() {
-      return state?.players.find(p => p.id === meId);
-    }
-
-    function playerName(id) {
-      return state?.players.find(p => p.id === id)?.name || 'Unowned';
-    }
-
-    function prop(i) {
-      return state.properties[i];
-    }
-
-    function deed(i) {
-      return deeds[i];
-    }
-
-    function alertErr(res) {
-      if (res && !res.ok && res.error) alert(res.error);
-    }
-
-    function saveSession(roomCodeValue, playerIdValue) {
-      roomCode = roomCodeValue;
-      meId = playerIdValue;
-      selectedPlayerId = selectedPlayerId || meId;
-      sessionStorage.setItem('monopolyRoomCode', roomCodeValue);
-      sessionStorage.setItem('monopolyPlayerId', playerIdValue);
-    }
-
-    function createRoom() {
-      socket.emit('createRoom', {
-        name: $('nameInput').value,
-        color: $('colorInput').value
-      }, res => {
-        if (!res.ok) return alertErr(res);
-        saveSession(res.roomCode, res.playerId);
-      });
-    }
-
-    function joinRoom() {
-      socket.emit('joinRoom', {
-        roomCode: $('codeInput').value.trim().toUpperCase(),
-        name: $('nameInput').value,
-        color: $('colorInput').value
-      }, res => {
-        if (!res.ok) return alertErr(res);
-        saveSession(res.roomCode, res.playerId);
-      });
-    }
-
-    socket.on('state', incoming => {
-      state = incoming;
-      deeds = incoming.deeds || [];
-
-      if (!selectedPlayerId || !state.players.some(p => p.id === selectedPlayerId)) {
-        selectedPlayerId = meId;
-      }
-
-      showGame();
-      render();
-    });
-
-    if (roomCode && meId) {
-      socket.emit('rejoin', { roomCode, playerId: meId }, res => {
-        if (!res?.ok) {
-          sessionStorage.removeItem('monopolyRoomCode');
-          sessionStorage.removeItem('monopolyPlayerId');
-        }
-      });
-    }
-
-    function showGame() {
-      $('joinScreen').classList.add('hidden');
-      $('gameScreen').classList.remove('hidden');
-      $('bottomNav').classList.remove('hidden');
-    }
-
-    function render() {
-      if (!state || !me()) return;
-
-      const mine = me();
-      const current = state.players[state.currentTurnIndex];
-
-      $('roomCode').textContent = state.code;
-      $('myMoney').textContent = money(mine.balance);
-      $('myPaid').textContent = money(mine.paymentsMade);
-      $('myReceived').textContent = money(mine.paymentsReceived);
-      $('myRole').textContent = mine.isBanker ? 'Banker / Room Leader' : 'Player';
-      $('turnName').textContent = current?.name || '-';
-      $('freeParking').textContent = money(state.freeParking);
-
-      $('actionTitle').textContent = state.lastAction?.title || 'Ready';
-      $('actionText').textContent = state.lastAction?.text || 'View title deeds, request purchases, or pay rent.';
-
-      $('bankerControls').classList.toggle('hidden', !mine.isBanker);
-      $('notBankerNotice').classList.toggle('hidden', mine.isBanker);
-
-      renderPlayers();
-      renderProfile();
-      renderSelects();
-      renderGroupFilter();
-      renderDeeds();
-      renderRequests();
-      renderLog();
-    }
-
-    function renderPlayers() {
-      const current = state.players[state.currentTurnIndex];
-
-      $('players').innerHTML = state.players.map(p => `
-        <button class="player-card ${p.id === selectedPlayerId ? 'active' : ''}" onclick="selectPlayer('${p.id}')">
-          <div class="avatar" style="background:${p.color}">
-            ${p.name.slice(0, 2).toUpperCase()}
-          </div>
-          <div class="player-name">${p.name}</div>
-          <div class="player-sub">${money(p.balance)} • ${ownedIndexes(p.id).length} deeds</div>
-          ${p.isBanker ? '<span class="tag banker">Banker</span>' : ''}
-          ${current?.id === p.id ? '<span class="tag turn">Turn</span>' : ''}
-          ${p.connected === false ? '<span class="tag offline">Offline</span>' : ''}
-        </button>
-      `).join('');
-    }
-
-    function selectPlayer(id) {
-      selectedPlayerId = id;
-      renderPlayers();
-      renderProfile();
-    }
-
-    function ownedIndexes(id) {
-      return state.properties
-        .map((p, i) => p.ownerId === id ? i : null)
-        .filter(i => i !== null);
-    }
-
-    function renderProfile() {
-      const p = state.players.find(x => x.id === selectedPlayerId) || me();
-      selectedPlayerId = p.id;
-      const owned = ownedIndexes(p.id);
-
-      $('profileTitle').textContent = `${p.name}'s Profile`;
-
-      $('profile').innerHTML = `
-        <div class="quick-stats">
-          <div class="mini-stat">
-            <span class="num">${money(p.balance)}</span>
-            <span class="txt">Cash</span>
-          </div>
-          <div class="mini-stat">
-            <span class="num">${owned.length}</span>
-            <span class="txt">Deeds</span>
-          </div>
-        </div>
-        ${
-          owned.length
-            ? `<div class="deed-grid">${owned.map(i => deedCard(i)).join('')}</div>`
-            : '<div class="notice">No title deeds owned yet.</div>'
-        }
-      `;
-    }
-
-    function renderSelects() {
-      const others = state.players.filter(p => p.id !== meId);
-      const all = state.players;
-
-      $('payTarget').innerHTML = others.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-      $('bankerPlayer').innerHTML = all.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-    }
-
-    function renderGroupFilter() {
-      const gf = $('groupFilter');
-      if (gf.dataset.ready) return;
-
-      const groups = [...new Set(deeds.map(d => d.group))];
-
-      gf.innerHTML = '<option value="all">All colors</option>' + groups.map(g => `
-        <option value="${g}">${g}</option>
-      `).join('');
-
-      gf.dataset.ready = '1';
-    }
-
-    function renderDeeds() {
-      const ownerFilter = $('ownerFilter')?.value || 'all';
-      const groupFilter = $('groupFilter')?.value || 'all';
-
-      let list = deeds.map((_, i) => i);
-
-      if (ownerFilter === 'available') {
-        list = list.filter(i => !prop(i).ownerId);
-      }
-
-      if (ownerFilter === 'mine') {
-        list = list.filter(i => prop(i).ownerId === meId);
-      }
-
-      if (groupFilter !== 'all') {
-        list = list.filter(i => deed(i).group === groupFilter);
-      }
-
-      $('deeds').innerHTML = list.map(i => deedCard(i)).join('') || '<div class="notice">No title deeds match this filter.</div>';
-    }
-
-    function currentRent(i) {
-      const d = deed(i);
-      const p = prop(i);
-
-      if (p.mortgaged) return 0;
-
-      if (d.rent) {
-        return d.rent[p.houses || 0];
-      }
-
-      if (d.type === 'railroad') {
-        const count = state.properties.filter((x, idx) => {
-          return x.ownerId === p.ownerId && deed(idx).type === 'railroad';
-        }).length;
-
-        return [25, 50, 100, 200][Math.max(0, count - 1)] || 25;
-      }
-
-      if (d.type === 'utility') {
-        const count = state.properties.filter((x, idx) => {
-          return x.ownerId === p.ownerId && deed(idx).type === 'utility';
-        }).length;
-
-        return count >= 2 ? 70 : 28;
-      }
-
-      return 0;
-    }
-
-    function markers(i) {
-      const h = prop(i).houses || 0;
-
-      if (!deed(i).rent || !prop(i).ownerId) return '';
-
-      if (h >= 5) {
-        return '<div class="house-row"><div class="hotel"></div><span class="deed-meta">Hotel</span></div>';
-      }
-
-      return h
-        ? `<div class="house-row">${Array.from({ length: h }, () => '<div class="house"></div>').join('')}</div>`
-        : '';
-    }
-
-    function rentTable(i) {
-      const d = deed(i);
-
-      if (!d.rent) {
-        return `
-          <table class="rent-table">
-            <tr>
-              <td>Rent</td>
-              <td>${d.type === 'railroad' ? '$25 / $50 / $100 / $200' : '$28 or $70 flat utility helper'}</td>
-            </tr>
-          </table>
-        `;
-      }
-
-      return `
-        <table class="rent-table">
-          <tr><td>Base</td><td>${money(d.rent[0])}</td></tr>
-          <tr><td>1 House</td><td>${money(d.rent[1])}</td></tr>
-          <tr><td>2 Houses</td><td>${money(d.rent[2])}</td></tr>
-          <tr><td>3 Houses</td><td>${money(d.rent[3])}</td></tr>
-          <tr><td>4 Houses</td><td>${money(d.rent[4])}</td></tr>
-          <tr><td>Hotel</td><td>${money(d.rent[5])}</td></tr>
-        </table>
-      `;
-    }
-
-    function deedCard(i) {
-      const d = deed(i);
-      const p = prop(i);
-      const owner = state.players.find(x => x.id === p.ownerId);
-      const isMine = p.ownerId === meId;
-      const unowned = !p.ownerId;
-      const rent = currentRent(i);
-
-      return `
-        <div class="deed-card">
-          <div class="deed-color" style="background:${d.color}"></div>
-          <div class="deed-body">
-            <div class="deed-title">
-              <strong>${d.name}</strong>
-              <span class="deed-price">${money(d.price)}</span>
-            </div>
-
-            <div class="deed-meta">
-              ${d.group} • Owner: ${owner ? owner.name : 'Available'}${p.mortgaged ? ' • Mortgaged' : ''}
-              <br>
-              Current rent: <strong>${money(rent)}</strong>
-              ${d.house ? ` • House: ${money(d.house)}` : ''}
-              • Mortgage: ${money(d.mortgage)}
-            </div>
-
-            ${markers(i)}
-            ${rentTable(i)}
-
-            <div class="deed-actions">
-              ${unowned ? `<button class="btn small green" onclick="requestPurchase(${i})">Request Buy</button>` : ''}
-              ${owner && !isMine ? `<button class="btn small green" onclick="payRent(${i})">Pay Rent</button>` : ''}
-              ${
-                isMine || me().isBanker
-                  ? d.rent
-                    ? `
-                      <button class="btn small white" onclick="addHouse(${i})">Add House</button>
-                      <button class="btn small white" onclick="sellHouse(${i})">Sell House</button>
-                    `
-                    : ''
-                  : ''
-              }
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    function renderRequests() {
-      const pendingPurchases = (state.purchaseRequests || []).filter(r => r.status === 'pending');
-
-      $('purchaseRequests').innerHTML = `
-        <div class="notice"><strong>Title Deed Purchase Requests</strong></div>
-        ${
-          pendingPurchases.length
-            ? pendingPurchases.map(r => `
-              <div class="request-card">
-                <strong>${playerName(r.playerId)} wants ${deed(r.propertyIndex).name}</strong>
-                <div class="deed-meta">Price: ${money(deed(r.propertyIndex).price)}</div>
-                <div class="two grid">
-                  <button class="btn small green" onclick="approvePurchase('${r.id}')">Approve</button>
-                  <button class="btn small" onclick="denyPurchase('${r.id}')">Deny</button>
-                </div>
-              </div>
-            `).join('')
-            : '<div class="notice">No pending purchase requests.</div>'
-        }
-      `;
-
-      const pendingFreeParking = (state.freeParkingRequests || []).filter(r => r.status === 'pending');
-
-      $('freeParkingRequests').innerHTML = `
-        <div class="notice"><strong>Free Parking Requests</strong></div>
-        ${
-          pendingFreeParking.length
-            ? pendingFreeParking.map(r => `
-              <div class="request-card">
-                <strong>${playerName(r.playerId)} wants Free Parking</strong>
-                <div class="deed-meta">Current pot: ${money(state.freeParking)}</div>
-                <div class="two grid">
-                  <button class="btn small green" onclick="approveFreeParking('${r.id}')">Approve</button>
-                  <button class="btn small" onclick="denyFreeParking('${r.id}')">Deny</button>
-                </div>
-              </div>
-            `).join('')
-            : '<div class="notice">No pending Free Parking requests.</div>'
-        }
-      `;
-    }
-
-    function setTab(tab) {
-      document.querySelectorAll('.tabPage').forEach(page => page.classList.add('hidden'));
-      document.querySelectorAll('.bottom-nav .tab').forEach(button => button.classList.remove('active'));
-
-      const map = {
-        players: 0,
-        deeds: 1,
-        pay: 2,
-        bank: 3,
-        log: 4
-      };
-
-      document.querySelectorAll('.bottom-nav .tab')[map[tab]].classList.add('active');
-      $(tab + 'Tab').classList.remove('hidden');
-
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function emit(event, data, clearIds = []) {
-      socket.emit(event, data, res => {
-        alertErr(res);
-
-        if (res?.ok) {
-          clearIds.forEach(id => {
-            $(id).value = '';
-          });
-        }
-      });
-    }
-
-    function requestPurchase(i) {
-      emit('requestPurchase', { propertyIndex: i });
-    }
-
-    function approvePurchase(id) {
-      emit('approvePurchase', { requestId: id });
-    }
-
-    function denyPurchase(id) {
-      emit('denyPurchase', { requestId: id });
-    }
-
-    function approveFreeParking(id) {
-      emit('approveFreeParking', { requestId: id });
-    }
-
-    function denyFreeParking(id) {
-      emit('denyFreeParking', { requestId: id });
-    }
-
-    function payRent(i) {
-      if (confirm(`Pay ${money(currentRent(i))} rent for ${deed(i).name}?`)) {
-        emit('payRent', { propertyIndex: i });
-      }
-    }
-
-    function addHouse(i) {
-      emit('addHouse', { propertyIndex: i });
-    }
-
-    function sellHouse(i) {
-      emit('sellHouse', { propertyIndex: i });
-    }
-
-    function payPlayer() {
-      emit('payPlayer', {
-        toId: $('payTarget').value,
-        amount: $('payAmount').value,
-        note: $('payNote').value
-      }, ['payAmount', 'payNote']);
-    }
-
-    function payBank() {
-      emit('payBank', {
-        amount: $('bankPayAmount').value,
-        note: 'Bank payment'
-      }, ['bankPayAmount']);
-    }
-
-    function payFreeParking() {
-      emit('payFreeParking', {
-        amount: $('bankPayAmount').value
-      }, ['bankPayAmount']);
-    }
-
-    function payIncomeTax() {
-      if (confirm('Pay $200 Income Tax into Free Parking?')) {
-        emit('payTaxOrJail', {
-          amount: 200,
-          reason: 'Income Tax'
-        });
-      }
-    }
-
-    function payLuxuryTax() {
-      if (confirm('Pay $100 Luxury Tax into Free Parking?')) {
-        emit('payTaxOrJail', {
-          amount: 100,
-          reason: 'Luxury Tax'
-        });
-      }
-    }
-
-    function payJailFee() {
-      if (confirm('Pay $50 to get out of jail? This money goes into Free Parking.')) {
-        emit('payTaxOrJail', {
-          amount: 50,
-          reason: 'Get Out of Jail Fee'
-        });
-      }
-    }
-
-    function collectFreeParking() {
-      emit('requestFreeParking');
-    }
-
-    function endTurn() {
-      emit('endTurn');
-    }
-
-    function bankerAdjust(mode) {
-      emit('bankerAdjustMoney', {
-        playerId: $('bankerPlayer').value,
-        amount: $('bankerAmount').value,
-        mode
-      }, ['bankerAmount']);
-    }
-
-    function setStartingMoney() {
-      emit('bankerSetStartingMoney', {
-        amount: $('startingMoney').value
-      });
-    }
-
-    function bankerResetRoom() {
-      if (confirm('Reset money, title deeds, and requests?')) {
-        emit('bankerResetRoom');
-      }
-    }
-
-    function bankerSetTurn() {
-      emit('bankerSetTurn', {
-        playerId: $('bankerPlayer').value
-      });
-    }
-
-    function renderLog() {
-      $('log').innerHTML = (state.log || []).map(item => `
-        <div class="log-item">
-          <strong>${item.time}</strong><br>
-          ${item.text}
-        </div>
-      `).join('');
-    }
-
-    function copyCode() {
-      navigator.clipboard.writeText(state.code);
-      alert('Copied ' + state.code);
-    }
+    const me = () => state?.players.find(p => p.id === meId);
+    const playerName = id => state?.players.find(p => p.id === id)?.name || 'Unowned';
+    const prop = i => state.properties[i];
+    const deed = i => deeds[i];
+    const alertErr = res => { if (res && !res.ok && res.error) alert(res.error); };
+    function saveSession(rc, pid){ roomCode=rc; meId=pid; selectedPlayerId=selectedPlayerId||meId; sessionStorage.setItem('monopolyRoomCode',rc); sessionStorage.setItem('monopolyPlayerId',pid); }
+    function createRoom(){ socket.emit('createRoom',{name:$('nameInput').value,color:$('colorInput').value},res=>{ if(!res.ok)return alertErr(res); saveSession(res.roomCode,res.playerId); }); }
+    function joinRoom(){ socket.emit('joinRoom',{roomCode:$('codeInput').value.trim().toUpperCase(),name:$('nameInput').value,color:$('colorInput').value},res=>{ if(!res.ok)return alertErr(res); saveSession(res.roomCode,res.playerId); }); }
+    socket.on('state', incoming => { state=incoming; deeds=incoming.deeds||[]; if(!selectedPlayerId||!state.players.some(p=>p.id===selectedPlayerId))selectedPlayerId=meId; showGame(); render(); });
+    if(roomCode&&meId){ socket.emit('rejoin',{roomCode,playerId:meId},res=>{ if(!res?.ok){sessionStorage.removeItem('monopolyRoomCode');sessionStorage.removeItem('monopolyPlayerId');} }); }
+    function showGame(){ $('joinScreen').classList.add('hidden'); $('gameScreen').classList.remove('hidden'); $('bottomNav').classList.remove('hidden'); }
+    function render(){ if(!state||!me())return; const mine=me(), current=state.players[state.currentTurnIndex]; $('roomCode').textContent=state.code; $('myMoney').textContent=money(mine.balance); $('myPaid').textContent=money(mine.paymentsMade); $('myReceived').textContent=money(mine.paymentsReceived); $('myRole').textContent=mine.isBanker?'Banker / Room Leader':'Player'; $('turnName').textContent=current?.name||'-'; $('freeParking').textContent=money(state.freeParking); $('actionTitle').textContent=state.lastAction?.title||'Ready'; $('actionText').textContent=state.lastAction?.text||'View title deeds, request purchases, or pay rent.'; $('bankerControls').classList.toggle('hidden',!mine.isBanker); $('notBankerNotice').classList.toggle('hidden',mine.isBanker); renderPlayers(); renderProfile(); renderSelects(); renderGroupFilter(); renderDeeds(); renderRequests(); renderTrades(); renderLog(); }
+    function renderPlayers(){ const current=state.players[state.currentTurnIndex]; $('players').innerHTML=state.players.map(p=>`<button class="player-card ${p.id===selectedPlayerId?'active':''}" onclick="selectPlayer('${p.id}')"><div class="avatar" style="background:${p.color}">${p.name.slice(0,2).toUpperCase()}</div><div class="player-name">${p.name}</div><div class="player-sub">${money(p.balance)} • ${ownedIndexes(p.id).length} deeds</div>${p.isBanker?'<span class="tag banker">Banker</span>':''}${current?.id===p.id?'<span class="tag turn">Turn</span>':''}${p.connected===false?'<span class="tag offline">Offline</span>':''}</button>`).join(''); }
+    function selectPlayer(id){ selectedPlayerId=id; renderPlayers(); renderProfile(); }
+    function ownedIndexes(id){ return state.properties.map((p,i)=>p.ownerId===id?i:null).filter(i=>i!==null); }
+    function renderProfile(){ const p=state.players.find(x=>x.id===selectedPlayerId)||me(); selectedPlayerId=p.id; $('profileTitle').textContent=`${p.name}'s Profile`; const owned=ownedIndexes(p.id); $('profile').innerHTML=`<div class="quick-stats"><div class="mini-stat"><span class="num">${money(p.balance)}</span><span class="txt">Cash</span></div><div class="mini-stat"><span class="num">${owned.length}</span><span class="txt">Deeds</span></div></div>${owned.length?`<div class="deed-grid">${owned.map(i=>deedCard(i,false)).join('')}</div>`:'<div class="notice">No title deeds owned yet.</div>'}`; }
+    function renderSelects(){ const others=state.players.filter(p=>p.id!==meId), all=state.players; $('payTarget').innerHTML=others.map(p=>`<option value="${p.id}">${p.name}</option>`).join(''); $('bankerPlayer').innerHTML=all.map(p=>`<option value="${p.id}">${p.name}</option>`).join(''); if($('tradePlayer')){ const keep=$('tradePlayer').value; $('tradePlayer').innerHTML=others.map(p=>`<option value="${p.id}">${p.name}</option>`).join(''); if(others.some(p=>p.id===keep)) $('tradePlayer').value=keep; } }
+    function renderGroupFilter(){ const gf=$('groupFilter'); if(gf.dataset.ready)return; const groups=[...new Set(deeds.map(d=>d.group))]; gf.innerHTML='<option value="all">All colors</option>'+groups.map(g=>`<option value="${g}">${g}</option>`).join(''); gf.dataset.ready='1'; }
+    function renderDeeds(){ const ownerFilter=$('ownerFilter')?.value||'all', groupFilter=$('groupFilter')?.value||'all'; let list=deeds.map((_,i)=>i); if(ownerFilter==='available')list=list.filter(i=>!prop(i).ownerId); if(ownerFilter==='mine')list=list.filter(i=>prop(i).ownerId===meId); if(groupFilter!=='all')list=list.filter(i=>deed(i).group===groupFilter); $('deeds').innerHTML=list.map(i=>deedCard(i,true)).join('')||'<div class="notice">No title deeds match this filter.</div>'; }
+    function currentRent(i){ const d=deed(i), p=prop(i); if(p.mortgaged)return 0; if(d.rent)return d.rent[p.houses||0]; if(d.type==='railroad'){ const c=state.properties.filter((x,idx)=>x.ownerId===p.ownerId&&deed(idx).type==='railroad').length; return [25,50,100,200][Math.max(0,c-1)]||25; } if(d.type==='utility')return state.properties.filter((x,idx)=>x.ownerId===p.ownerId&&deed(idx).type==='utility').length>=2?70:28; return 0; }
+    function markers(i){ const h=prop(i).houses||0; if(!deed(i).rent||!prop(i).ownerId)return ''; if(h>=5)return '<div class="house-row"><div class="hotel"></div><span class="deed-meta">Hotel</span></div>'; return h?`<div class="house-row">${Array.from({length:h},()=>'<div class="house"></div>').join('')}</div>`:''; }
+    function deedCard(i, showAll){ const d=deed(i), p=prop(i), owner=state.players.find(x=>x.id===p.ownerId), isMine=p.ownerId===meId, unowned=!p.ownerId, rent=currentRent(i); return `<div class="deed-card"><div class="deed-color" style="background:${d.color}"></div><div class="deed-body"><div class="deed-title"><strong>${d.name}</strong><span class="deed-price">${money(d.price)}</span></div><div class="deed-meta">${d.group} • Owner: ${owner?owner.name:'Available'}${p.mortgaged?' • Mortgaged':''}<br>Current rent: <strong>${money(rent)}</strong>${d.house?` • House: ${money(d.house)}`:''} • Mortgage: ${money(d.mortgage)}</div>${markers(i)}${rentTable(i)}<div class="deed-actions">${unowned?`<button class="btn small green" onclick="requestPurchase(${i})">Request Buy</button>`:''}${owner&&!isMine?`<button class="btn small green" onclick="payRent(${i})">Pay Rent</button>`:''}${isMine||me().isBanker?`${d.rent?`<button class="btn small white" onclick="addHouse(${i})">Add House</button><button class="btn small white" onclick="sellHouse(${i})">Sell House</button>`:''}`:''}</div></div></div>`; }
+    function rentTable(i){ const d=deed(i); if(!d.rent)return `<table class="rent-table"><tr><td>Rent</td><td>${d.type==='railroad'?'$25 / $50 / $100 / $200':'$28 or $70 flat utility helper'}</td></tr></table>`; return `<table class="rent-table"><tr><td>Base</td><td>${money(d.rent[0])}</td></tr><tr><td>1 House</td><td>${money(d.rent[1])}</td></tr><tr><td>2 Houses</td><td>${money(d.rent[2])}</td></tr><tr><td>3 Houses</td><td>${money(d.rent[3])}</td></tr><tr><td>4 Houses</td><td>${money(d.rent[4])}</td></tr><tr><td>Hotel</td><td>${money(d.rent[5])}</td></tr></table>`; }
+    function renderRequests(){ const pending=(state.purchaseRequests||[]).filter(r=>r.status==='pending'); $('purchaseRequests').innerHTML='<div class="notice"><strong>Title Deed Purchase Requests</strong></div>'+(pending.length?pending.map(r=>`<div class="request-card"><strong>${playerName(r.playerId)} wants ${deed(r.propertyIndex).name}</strong><div class="deed-meta">Price: ${money(deed(r.propertyIndex).price)}</div><div class="two grid"><button class="btn small green" onclick="approvePurchase('${r.id}')">Approve</button><button class="btn small" onclick="denyPurchase('${r.id}')">Deny</button></div></div>`).join(''):'<div class="notice">No pending purchase requests.</div>'); const fp=(state.freeParkingRequests||[]).filter(r=>r.status==='pending'); $('freeParkingRequests').innerHTML='<div class="notice"><strong>Free Parking Requests</strong></div>'+(fp.length?fp.map(r=>`<div class="request-card"><strong>${playerName(r.playerId)} wants Free Parking</strong><div class="deed-meta">Current pot: ${money(state.freeParking)}</div><div class="two grid"><button class="btn small green" onclick="approveFreeParking('${r.id}')">Approve</button><button class="btn small" onclick="denyFreeParking('${r.id}')">Deny</button></div></div>`).join(''):'<div class="notice">No pending Free Parking requests.</div>'); }
+    function setTab(tab){ document.querySelectorAll('.tabPage').forEach(p=>p.classList.add('hidden')); document.querySelectorAll('.bottom-nav .tab').forEach(b=>b.classList.remove('active')); const map={players:0,deeds:1,pay:2,trades:3,bank:4,log:5}; document.querySelectorAll('.bottom-nav .tab')[map[tab]].classList.add('active'); $(tab+'Tab').classList.remove('hidden'); if(tab==='trades') renderTrades(); window.scrollTo({top:0,behavior:'smooth'}); }
+    function emit(event,data,clearIds=[]){ socket.emit(event,data,res=>{ alertErr(res); if(res?.ok)clearIds.forEach(id=>$(id).value=''); }); }
+    function requestPurchase(i){ emit('requestPurchase',{propertyIndex:i}); }
+    function approvePurchase(id){ emit('approvePurchase',{requestId:id}); }
+    function denyPurchase(id){ emit('denyPurchase',{requestId:id}); }
+    function approveFreeParking(id){ emit('approveFreeParking',{requestId:id}); }
+    function denyFreeParking(id){ emit('denyFreeParking',{requestId:id}); }
+    function payRent(i){ if(confirm(`Pay ${money(currentRent(i))} rent for ${deed(i).name}?`))emit('payRent',{propertyIndex:i}); }
+    function addHouse(i){ emit('addHouse',{propertyIndex:i}); }
+    function sellHouse(i){ emit('sellHouse',{propertyIndex:i}); }
+    function payPlayer(){ emit('payPlayer',{toId:$('payTarget').value,amount:$('payAmount').value,note:$('payNote').value},['payAmount','payNote']); }
+    function payBank(){ emit('payBank',{amount:$('bankPayAmount').value,note:'Bank payment'},['bankPayAmount']); }
+    function payFreeParking(){ emit('payFreeParking',{amount:$('bankPayAmount').value},['bankPayAmount']); }
+    function payIncomeTax(){ if(confirm('Pay $200 Income Tax into Free Parking?'))emit('payTaxOrJail',{amount:200,reason:'Income Tax'}); }
+    function payLuxuryTax(){ if(confirm('Pay $100 Luxury Tax into Free Parking?'))emit('payTaxOrJail',{amount:100,reason:'Luxury Tax'}); }
+    function payJailFee(){ if(confirm('Pay $50 to get out of jail? This money goes into Free Parking.'))emit('payTaxOrJail',{amount:50,reason:'Get Out of Jail Fee'}); }
+    function collectFreeParking(){ emit('requestFreeParking'); }
+    function endTurn(){ emit('endTurn'); }
+    function bankerAdjust(mode){ emit('bankerAdjustMoney',{playerId:$('bankerPlayer').value,amount:$('bankerAmount').value,mode},['bankerAmount']); }
+    function setStartingMoney(){ emit('bankerSetStartingMoney',{amount:$('startingMoney').value}); }
+    function bankerResetRoom(){ if(confirm('Reset money, title deeds, and requests?'))emit('bankerResetRoom'); }
+    function bankerSetTurn(){ emit('bankerSetTurn',{playerId:$('bankerPlayer').value}); }
+
+    const groupInfo={Brown:{power:3,houseCost:50,fullSetBonus:18},"Light Blue":{power:7,houseCost:50,fullSetBonus:30},Pink:{power:8,houseCost:100,fullSetBonus:32},Orange:{power:10,houseCost:100,fullSetBonus:42},Red:{power:9,houseCost:150,fullSetBonus:38},Yellow:{power:8,houseCost:150,fullSetBonus:34},Green:{power:7,houseCost:200,fullSetBonus:28},"Dark Blue":{power:10,houseCost:200,fullSetBonus:36}};
+    function selectedTradeIndexes(cls){return Array.from(document.querySelectorAll('.'+cls+':checked')).map(x=>Number(x.value));}
+    function groupIndexes(group){return deeds.map((d,i)=>d.group===group&&!d.type?i:null).filter(i=>i!==null);}
+    function ownerArray(){return state.properties.map(p=>p.ownerId);}
+    function ownsGroup(owners,pid,group){const idx=groupIndexes(group);return idx.length&&idx.every(i=>owners[i]===pid);}
+    function countGroup(owners,pid,group){return groupIndexes(group).filter(i=>owners[i]===pid).length;}
+    function buildAffordability(group,cash){const info=groupInfo[group]; if(!info)return 0; const setCost=info.houseCost*groupIndexes(group).length; if(cash>=setCost*2+300)return 1.35; if(cash>=setCost+300)return 1.1; if(cash>=setCost)return .85; if(cash>=info.houseCost)return .45; return .2;}
+    function opponentCashDanger(cash){if(cash>=1200)return 1.45; if(cash>=900)return 1.25; if(cash>=600)return 1.05; if(cash>=300)return .7; return .35;}
+    function lowCashSetBonus(group,cash){const info=groupInfo[group]; if(!info||cash>=700)return 0; if(info.houseCost===50)return 10; if(info.houseCost===100)return 6; if(info.houseCost===150)return 1; if(info.houseCost===200)return -7; return 0;}
+    function railroadUtilityScore(ownersBefore,ownersAfter,you,other){let score=0; ['railroad','utility'].forEach(type=>{const beforeYou=deeds.filter((d,i)=>d.type===type&&ownersBefore[i]===you).length, afterYou=deeds.filter((d,i)=>d.type===type&&ownersAfter[i]===you).length, beforeThem=deeds.filter((d,i)=>d.type===type&&ownersBefore[i]===other).length, afterThem=deeds.filter((d,i)=>d.type===type&&ownersAfter[i]===other).length; if(type==='railroad'){score += [0,0,5,9,14][afterYou]-[0,0,5,9,14][beforeYou]; score -= ([0,0,5,9,14][afterThem]-[0,0,5,9,14][beforeThem]);}else{if(afterYou===2&&beforeYou<2)score+=6; if(afterThem===2&&beforeThem<2)score-=6;}}); return Math.max(-10,Math.min(10,score));}
+    function analyzeTradeFor(you,other,giveMoney,receiveMoney,giveProps,receiveProps){const youP=state.players.find(p=>p.id===you), otherP=state.players.find(p=>p.id===other); const gm=cleanNum(giveMoney), rm=cleanNum(receiveMoney); const giveVal=gm+giveProps.reduce((a,i)=>a+deed(i).price,0), receiveVal=rm+receiveProps.reduce((a,i)=>a+deed(i).price,0); const yourCash=(youP?.balance||0)-gm+rm, theirCash=(otherP?.balance||0)-rm+gm; const before=ownerArray(), after=[...before]; giveProps.forEach(i=>after[i]=other); receiveProps.forEach(i=>after[i]=you); let score=50, reasons=[], warnings=[]; const net=receiveVal-giveVal; const raw=Math.max(-12,Math.min(12,net/25)); score+=raw; if(net>=100)reasons.push(['plus',`You receive ${money(net)} more in raw value.`]); if(net<=-100)reasons.push(['minus',`You give up ${money(Math.abs(net))} more in raw value.`]); Object.keys(groupInfo).forEach(group=>{const info=groupInfo[group]; const youBefore=ownsGroup(before,you,group), youAfter=ownsGroup(after,you,group), themBefore=ownsGroup(before,other,group), themAfter=ownsGroup(after,other,group); if(!youBefore&&youAfter){let pts=info.fullSetBonus*buildAffordability(group,yourCash)+lowCashSetBonus(group,yourCash); score+=pts; reasons.push(['plus',`You complete ${group}. House cost is ${money(info.houseCost)}, so buildability is factored in.`]); if(info.houseCost<=100&&yourCash<700)reasons.push(['plus',`${group} is affordable for a lower-cash player.`]); if(info.houseCost>=200&&yourCash<700)warnings.push(`You complete ${group}, but houses are expensive and your cash is low.`);} if(!themBefore&&themAfter){let pts=info.fullSetBonus*buildAffordability(group,theirCash)*opponentCashDanger(theirCash); score-=pts; reasons.push(['minus',`${otherP?.name||'They'} complete ${group}. With ${money(theirCash)} left, this is dangerous.`]); if(theirCash>=900)warnings.push(`${otherP?.name||'They'} has enough cash to build immediately.`);} if(youBefore&&!youAfter){score-=18; warnings.push(`You break your ${group} color set.`);} if(themBefore&&!themAfter){score+=16; reasons.push(['plus',`You break ${otherP?.name||'their'} ${group} color set.`]);} const size=groupIndexes(group).length; const youProgress=countGroup(after,you,group)-countGroup(before,you,group); const themProgress=countGroup(after,other,group)-countGroup(before,other,group); if(youProgress>0&&!youAfter)score+=Math.min(8,3*youProgress+(countGroup(after,you,group)===size-1?5:0)); if(themProgress>0&&!themAfter)score-=Math.min(8,3*themProgress+(countGroup(after,other,group)===size-1?5:0)); }); let rentScore=0; receiveProps.forEach(i=>{rentScore+=(groupInfo[deed(i).group]?.power||2)*.8}); giveProps.forEach(i=>{rentScore-=(groupInfo[deed(i).group]?.power||2)*.8}); rentScore=Math.max(-10,Math.min(10,rentScore)); score+=rentScore; score+=railroadUtilityScore(before,after,you,other); if(yourCash>=1000){score+=8; reasons.push(['plus',`You stay cash-safe with ${money(yourCash)} left.`]);} else if(yourCash<100){score-=12; warnings.push(`You would have under $100 after this trade.`);} else if(yourCash<300){score-=7; warnings.push(`Your cash would be low after this trade.`);} if(theirCash>=1000)score-=6; if(theirCash<200)score+=5; const deedDiff=receiveProps.length-giveProps.length; if(deedDiff>=2)score+=6; else if(deedDiff===1)score+=3; else if(deedDiff<=-2)score-=6; else if(deedDiff===-1)score-=3; score=Math.max(0,Math.min(100,Math.round(score))); const label=tradeLabel(score); if(!reasons.length)reasons.push(['neutral','This trade is mostly balanced on money, deeds, and set control.']); return{score,label,net,yourCash,theirCash,reasons,warnings};}
+    function tradeLabel(score){if(score>=82)return'Very Good'; if(score>=64)return'Good'; if(score>=45)return'Neutral'; if(score>=27)return'Bad'; return'Very Bad';}
+    function cleanNum(v){return Math.max(0,Math.floor(Number(v)||0));}
+    function labelClass(label){return label==='Very Good'||label==='Good'?'good':(label==='Bad'||label==='Very Bad'?'bad':'');}
+    function renderTradePickers(){const other=$('tradePlayer')?.value; if(!other||!state)return; const mine=meId; const myProps=state.properties.map((p,i)=>p.ownerId===mine?i:null).filter(i=>i!==null); const theirProps=state.properties.map((p,i)=>p.ownerId===other?i:null).filter(i=>i!==null); const row=(i,cls)=>`<label class="pick-deed"><input class="${cls}" type="checkbox" value="${i}" onchange="renderTradeAnalyzer()"><span class="pick-color" style="background:${deed(i).color}"></span><span class="pick-name"><strong>${deed(i).name}</strong><span>${deed(i).group}</span></span><span class="pick-price">${money(deed(i).price)}</span></label>`; $('tradeGiveDeeds').innerHTML=myProps.length?myProps.map(i=>row(i,'trade-give-prop')).join(''):'<div class="notice">You do not own any deeds yet.</div>'; $('tradeReceiveDeeds').innerHTML=theirProps.length?theirProps.map(i=>row(i,'trade-receive-prop')).join(''):'<div class="notice">This player does not own any deeds yet.</div>';}
+    function renderTradeAnalyzer(){if(!$('tradeAnalyzer')||!state)return; const other=$('tradePlayer')?.value; if(!other){$('tradeAnalyzer').innerHTML='<div class="notice">Choose a player to analyze a trade.</div>';return null;} const give=selectedTradeIndexes('trade-give-prop'), receive=selectedTradeIndexes('trade-receive-prop'), gm=cleanNum($('tradeGiveMoney')?.value), rm=cleanNum($('tradeReceiveMoney')?.value); const a=analyzeTradeFor(meId,other,gm,rm,give,receive); const why=a.reasons.slice(0,4).map(r=>`<div class="why-item ${r[0]}">${r[1]}</div>`).join(''); const warn=a.warnings.slice(0,3).map(w=>`<div class="why-item minus">Warning: ${w}</div>`).join(''); $('tradeAnalyzer').innerHTML=`<div class="score-top"><div class="score-circle">${a.score}</div><div><div class="score-title ${labelClass(a.label)}">${a.label} for you</div><div class="score-sub">Value diff: ${a.net>=0?'+':''}${money(a.net)} • You after: ${money(a.yourCash)} • Them after: ${money(a.theirCash)}</div></div></div><div class="score-bar"><div class="score-fill" style="width:${a.score}%"></div></div><div class="analyzer-grid"><div class="analyzer-stat"><strong>${money(a.yourCash)}</strong><span>Your cash after</span></div><div class="analyzer-stat"><strong>${money(a.theirCash)}</strong><span>Their cash after</span></div></div><div class="why-list">${why}${warn}</div>`; return a;}
+    function renderTrades(){if(!$('tradesTab')||!state||!me())return; renderTradePickers(); const analysis=renderTradeAnalyzer(); const trades=(state.tradeOffers||[]); const incoming=trades.filter(t=>t.status==='pending'&&t.toId===meId), outgoing=trades.filter(t=>t.status==='pending'&&t.fromId===meId); $('incomingTrades').innerHTML=incoming.length?incoming.map(t=>tradeOfferCard(t,true)).join(''):'<div class="notice">No incoming trade offers.</div>'; $('outgoingTrades').innerHTML=outgoing.length?outgoing.map(t=>tradeOfferCard(t,false)).join(''):'<div class="notice">No outgoing trade offers.</div>';}
+    function propertyChips(indexes){return indexes.length?`<div class="trade-chip-row">${indexes.map(i=>`<span class="trade-chip">${deed(i).name}</span>`).join('')}</div>`:'<div class="deed-meta">No deeds</div>';}
+    function tradeOfferCard(t,incoming){const otherId=incoming?t.fromId:t.toId; const other=playerName(otherId); const a=incoming?analyzeTradeFor(meId,otherId,t.receiveMoney,t.giveMoney,t.receiveProperties,t.giveProperties):analyzeTradeFor(meId,otherId,t.giveMoney,t.receiveMoney,t.giveProperties,t.receiveProperties); return `<div class="offer-card"><div class="offer-head"><strong>${incoming?other+' offered you a trade':'To '+other}</strong><span class="offer-score">${a.score}/100 ${a.label}</span></div><div class="two grid"><div><div class="deed-meta">You give ${money(incoming?t.receiveMoney:t.giveMoney)}</div>${propertyChips(incoming?t.receiveProperties:t.giveProperties)}</div><div><div class="deed-meta">You receive ${money(incoming?t.giveMoney:t.receiveMoney)}</div>${propertyChips(incoming?t.giveProperties:t.receiveProperties)}</div></div><div class="why-list">${a.reasons.slice(0,2).map(r=>`<div class="why-item ${r[0]}">${r[1]}</div>`).join('')}</div>${incoming?`<div class="two grid"><button class="btn small green" onclick="acceptTrade('${t.id}')">Accept</button><button class="btn small" onclick="denyTrade('${t.id}')">Deny</button></div>`:`<button class="btn small white" onclick="denyTrade('${t.id}')">Cancel Offer</button>`}</div>`;}
+    function sendTradeOffer(){const other=$('tradePlayer').value; const give=selectedTradeIndexes('trade-give-prop'), receive=selectedTradeIndexes('trade-receive-prop'), gm=cleanNum($('tradeGiveMoney').value), rm=cleanNum($('tradeReceiveMoney').value); const a=renderTradeAnalyzer(); emit('createTradeOffer',{toId:other,giveMoney:gm,receiveMoney:rm,giveProperties:give,receiveProperties:receive,analyzerScore:a?.score,analyzerLabel:a?.label},['tradeGiveMoney','tradeReceiveMoney']);}
+    function acceptTrade(id){emit('acceptTradeOffer',{tradeId:id});}
+    function denyTrade(id){emit('denyTradeOffer',{tradeId:id});}
+    function renderLog(){ $('log').innerHTML=(state.log||[]).map(item=>`<div class="log-item"><strong>${item.time}</strong><br>${item.text}</div>`).join(''); }
+    function copyCode(){ navigator.clipboard.writeText(state.code); alert('Copied '+state.code); }
   </script>
 </body>
 </html>
