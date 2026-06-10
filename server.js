@@ -69,6 +69,7 @@ function initialRoom(leader) {
     players: [leader],
     properties: DEEDS.map(() => ({ ownerId: null, houses: 0, mortgaged: false })),
     purchaseRequests: [],
+    freeParkingRequests: [],
     lastAction: { title: 'Room created', text: `${leader.name} is the banker. Players can request title deeds.` },
     settings: { startingMoney: STARTING_MONEY, freeParkingMinimum: FREE_PARKING_MIN },
     log: [{ time: new Date().toLocaleTimeString(), text: `${leader.name} created the Monopoly room.` }]
@@ -202,10 +203,61 @@ io.on('connection', socket => {
     addLog(room, `${player.name} paid ${money(n)} into Free Parking.`); emitRoom(ctx.roomCode); cb?.({ ok: true });
   });
 
-  socket.on('collectFreeParking', cb => {
-    const { ctx, room, player } = getContext(socket); if (!room || !player) return cb?.({ ok: false, error: 'Not in a room.' });
-    const amount = Math.max(room.freeParking || 0, room.settings.freeParkingMinimum || FREE_PARKING_MIN); player.balance += amount; room.freeParking = room.settings.freeParkingMinimum || FREE_PARKING_MIN;
-    room.lastAction = { title: 'Free Parking collected', text: `${player.name} collected ${money(amount)}.` }; addLog(room, `${player.name} collected ${money(amount)} from Free Parking.`);
+  socket.on('requestFreeParking', cb => {
+    const { ctx, room, player } = getContext(socket);
+    if (!room || !player) return cb?.({ ok: false, error: 'Not in a room.' });
+    const existing = room.freeParkingRequests?.find(r => r.status === 'pending' && r.playerId === player.id);
+    if (existing) return cb?.({ ok: false, error: 'You already requested Free Parking approval.' });
+    room.freeParkingRequests = room.freeParkingRequests || [];
+    const amount = Math.max(room.freeParking || 0, room.settings.freeParkingMinimum || FREE_PARKING_MIN);
+    room.freeParkingRequests.unshift({ id: uid(), playerId: player.id, amount, status: 'pending', createdAt: Date.now() });
+    room.lastAction = { title: 'Free Parking approval needed', text: `${player.name} requested to collect ${money(amount)} from Free Parking.` };
+    addLog(room, `${player.name} requested banker approval to collect ${money(amount)} from Free Parking.`);
+    emitRoom(ctx.roomCode); cb?.({ ok: true });
+  });
+
+  socket.on('approveFreeParking', ({ requestId }, cb) => {
+    const { ctx, room, player: banker } = getContext(socket);
+    if (!room || !banker) return cb?.({ ok: false, error: 'Not in a room.' });
+    if (!requireBanker(banker, cb)) return;
+    room.freeParkingRequests = room.freeParkingRequests || [];
+    const req = room.freeParkingRequests.find(r => r.id === requestId);
+    if (!req || req.status !== 'pending') return cb?.({ ok: false, error: 'Free Parking request not found.' });
+    const winner = room.players.find(p => p.id === req.playerId);
+    if (!winner) return cb?.({ ok: false, error: 'Player not found.' });
+    const amount = Math.max(room.freeParking || 0, room.settings.freeParkingMinimum || FREE_PARKING_MIN);
+    winner.balance += amount;
+    room.freeParking = room.settings.freeParkingMinimum || FREE_PARKING_MIN;
+    req.status = 'approved';
+    room.lastAction = { title: 'Free Parking approved', text: `${winner.name} collected ${money(amount)} from Free Parking.` };
+    addLog(room, `Banker approved ${winner.name}'s Free Parking collection of ${money(amount)}.`);
+    emitRoom(ctx.roomCode); cb?.({ ok: true });
+  });
+
+  socket.on('denyFreeParking', ({ requestId }, cb) => {
+    const { ctx, room, player: banker } = getContext(socket);
+    if (!room || !banker) return cb?.({ ok: false, error: 'Not in a room.' });
+    if (!requireBanker(banker, cb)) return;
+    room.freeParkingRequests = room.freeParkingRequests || [];
+    const req = room.freeParkingRequests.find(r => r.id === requestId);
+    if (!req || req.status !== 'pending') return cb?.({ ok: false, error: 'Free Parking request not found.' });
+    const requester = room.players.find(p => p.id === req.playerId);
+    req.status = 'denied';
+    addLog(room, `Banker denied ${requester?.name || 'a player'}'s Free Parking request.`);
+    emitRoom(ctx.roomCode); cb?.({ ok: true });
+  });
+
+  socket.on('payTaxOrJail', ({ amount, reason }, cb) => {
+    const { ctx, room, player } = getContext(socket);
+    if (!room || !player) return cb?.({ ok: false, error: 'Not in a room.' });
+    const n = cleanAmount(amount);
+    const cleanReason = String(reason || 'Tax/Jail').trim().slice(0, 60);
+    if (!n) return cb?.({ ok: false, error: 'Enter a valid amount.' });
+    if (player.balance < n) return cb?.({ ok: false, error: 'Not enough money.' });
+    player.balance -= n;
+    room.freeParking += n;
+    room.lastAction = { title: `${cleanReason} paid`, text: `${player.name} paid ${money(n)} into Free Parking.` };
+    addLog(room, `${player.name} paid ${money(n)} for ${cleanReason}. Money went into Free Parking.`);
     emitRoom(ctx.roomCode); cb?.({ ok: true });
   });
 
@@ -255,7 +307,7 @@ io.on('connection', socket => {
   socket.on('bankerResetRoom', cb => {
     const { ctx, room, player: banker } = getContext(socket); if (!room || !banker) return cb?.({ ok: false, error: 'Not in a room.' }); if (!requireBanker(banker, cb)) return;
     room.players.forEach(p => { p.balance = room.settings.startingMoney || STARTING_MONEY; p.paymentsMade = 0; p.paymentsReceived = 0; });
-    room.properties = DEEDS.map(() => ({ ownerId: null, houses: 0, mortgaged: false })); room.purchaseRequests = []; room.freeParking = FREE_PARKING_MIN; room.currentTurnIndex = 0;
+    room.properties = DEEDS.map(() => ({ ownerId: null, houses: 0, mortgaged: false })); room.purchaseRequests = []; room.freeParkingRequests = []; room.freeParking = FREE_PARKING_MIN; room.currentTurnIndex = 0;
     addLog(room, 'Banker reset the whole room.'); emitRoom(ctx.roomCode); cb?.({ ok: true });
   });
 
