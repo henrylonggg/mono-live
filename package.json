@@ -1,17 +1,15 @@
 {
-  "name": "monopoly-live-bank",
-  "version": "1.0.0",
-  "description": "Live multiplayer Monopoly banking, deeds, trades, and cards app",
+  "name": "beeropoly-live",
+  "version": "2.0.0",
+  "description": "Live multiplayer Beeropoly mobile sip tracker",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
+    "express": "^4.18.3",
     "socket.io": "^4.7.5"
-  },
-  "engines": {
-    "node": ">=18"
   }
 }
+
