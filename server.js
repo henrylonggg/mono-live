@@ -1,275 +1,208 @@
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const path = require('path');
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Monopoly Live Bank</title>
+  <style>
+    :root{--red:#c62828;--green:#0f7a3b;--gold:#f6c344;--cream:#fff3c9;--paper:#fff9e8;--ink:#151515;--muted:#6e624b;--shadow:0 14px 34px rgba(0,0,0,.3);--safe:env(safe-area-inset-bottom,0px)}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:radial-gradient(circle at top,rgba(246,195,68,.26),transparent 32%),linear-gradient(180deg,#15582f,#062b17);color:var(--ink);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    button,input,select{font:inherit}
+    button{border:0;cursor:pointer}
+    .app{width:min(720px,100%);margin:0 auto;min-height:100vh;padding:12px 12px calc(94px + var(--safe))}
+    .top{background:var(--red);color:#fff;border:4px solid #fff;border-radius:22px;padding:16px 14px;box-shadow:var(--shadow);text-align:center;margin-bottom:12px;position:relative;overflow:hidden}
+    .top:before,.top:after{content:"$";position:absolute;top:50%;transform:translateY(-50%);font-size:56px;font-weight:1000;opacity:.16}
+    .top:before{left:18px}
+    .top:after{right:18px}
+    .top h1{margin:0;font-size:clamp(28px,8vw,44px);line-height:.9;text-transform:uppercase;letter-spacing:-.08em}
+    .top p{margin:8px 0 0;color:rgba(255,255,255,.86);font-size:13px;font-weight:850}
+    .card,.panel{background:var(--paper);border:3px solid var(--ink);border-radius:20px;box-shadow:var(--shadow);margin-bottom:12px}
+    .card{padding:14px}
+    .panel{overflow:hidden}
+    .panel-head{padding:11px 12px;background:var(--red);color:#fff;border-bottom:3px solid var(--ink);text-align:center;font-weight:1000;text-transform:uppercase;letter-spacing:.04em}
+    .panel-head.green{background:var(--green)}
+    .panel-head.gold{background:var(--gold);color:var(--ink)}
+    .panel-body{padding:14px}
+    .grid{display:grid;gap:10px}
+    .two{grid-template-columns:1fr 1fr}
+    .three{grid-template-columns:repeat(3,1fr)}
+    label{display:block;margin-bottom:6px;color:var(--muted);font-size:12px;font-weight:1000;text-transform:uppercase;letter-spacing:.04em}
+    input,select{width:100%;min-height:52px;padding:13px 14px;border:3px solid var(--ink);border-radius:15px;background:#fff;color:var(--ink);outline:none;font-weight:850;font-size:16px}
+    .btn{width:100%;min-height:52px;padding:13px 14px;border:3px solid var(--ink);border-radius:15px;background:var(--red);color:#fff;font-weight:1000;text-transform:uppercase;box-shadow:0 5px 0 var(--ink)}
+    .btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+    .btn.green{background:var(--green)}
+    .btn.gold{background:var(--gold);color:var(--ink)}
+    .btn.white{background:#fff;color:var(--ink)}
+    .btn.small{min-height:38px;padding:8px 10px;font-size:12px;box-shadow:0 3px 0 var(--ink)}
+    .hidden{display:none!important}
+    .notice{padding:11px;border:3px dashed var(--ink);border-radius:15px;background:#fff0b3;color:var(--ink);font-size:13px;font-weight:800;line-height:1.35}
+    .room-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .code{color:var(--red);font-size:31px;font-weight:1000;letter-spacing:.09em;line-height:1}
+    .stat-main{background:linear-gradient(135deg,var(--green),#06381d);border-color:#fff;color:#fff}
+    .label-light{color:rgba(255,255,255,.78);font-size:12px;text-transform:uppercase;font-weight:1000;letter-spacing:.05em}
+    .big-stat{margin:5px 0 0;font-size:42px;line-height:.96;font-weight:1000;letter-spacing:-.08em}
+    .role{margin-top:6px;color:rgba(255,255,255,.78);font-size:13px;font-weight:800}
+    .quick-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+    .mini-stat{background:#fff;border:3px solid var(--ink);border-radius:17px;padding:11px;text-align:center;box-shadow:0 4px 0 var(--ink)}
+    .mini-stat .num{display:block;color:var(--green);font-size:26px;line-height:1;font-weight:1000;letter-spacing:-.05em}
+    .mini-stat .txt{margin-top:4px;color:var(--muted);font-size:12px;font-weight:900;text-transform:uppercase}
+    .action-card{background:#fff;border:3px solid var(--ink);border-radius:18px;padding:13px;box-shadow:0 4px 0 var(--ink);margin-bottom:12px}
+    .action-title{margin:0 0 4px;color:var(--red);font-size:19px;font-weight:1000;letter-spacing:-.04em}
+    .action-text{margin:0;color:var(--muted);font-size:13px;font-weight:800;line-height:1.35}
+    .players-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .player-card{background:#fff;border:3px solid var(--ink);border-radius:18px;padding:11px;text-align:center;box-shadow:0 4px 0 var(--ink);min-width:0}
+    .player-card.active{background:var(--gold)}
+    .avatar{width:56px;height:56px;border:3px solid var(--ink);border-radius:50%;display:grid;place-items:center;margin:0 auto 8px;color:#fff;font-weight:1000;font-size:18px}
+    .player-name{font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .player-sub{margin-top:3px;color:var(--muted);font-size:12px;font-weight:850}
+    .tag{display:inline-flex;padding:3px 7px;border:2px solid var(--ink);border-radius:999px;background:var(--cream);color:var(--ink);font-size:10px;font-weight:1000;text-transform:uppercase;margin-top:6px}
+    .tag.banker{background:var(--gold)}
+    .tag.turn{background:var(--green);color:#fff}
+    .tag.offline{background:#ddd;color:#333}
+    .deed-grid{display:grid;gap:12px}
+    .deed-card{background:#fff;border:3px solid var(--ink);border-radius:16px;overflow:hidden;box-shadow:0 4px 0 var(--ink)}
+    .deed-color{height:20px;border-bottom:3px solid var(--ink)}
+    .deed-body{padding:12px}
+    .deed-title{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+    .deed-title strong{font-size:16px}
+    .deed-price{color:var(--green);font-weight:1000;white-space:nowrap}
+    .deed-meta{color:var(--muted);font-size:12px;font-weight:850;line-height:1.35;margin-top:4px}
+    .deed-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+    .house-row{display:flex;gap:4px;align-items:center;margin-top:8px}
+    .house{width:14px;height:12px;background:#16a34a;border:2px solid var(--ink);border-radius:3px}
+    .hotel{width:28px;height:18px;background:#c62828;border:2px solid var(--ink);border-radius:4px}
+    .rent-table{width:100%;border-collapse:collapse;margin-top:10px;background:#fff;border:3px solid var(--ink)}
+    .rent-table td{border-bottom:2px solid var(--ink);padding:6px;font-size:13px;font-weight:850}
+    .rent-table tr:last-child td{border-bottom:0}
+    .rent-table td:last-child{text-align:right;font-weight:1000}
+    .filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+    .request-card,.log-item{background:#fff;border:3px solid var(--ink);border-radius:14px;padding:10px;font-size:13px;font-weight:750;line-height:1.35}
+    .request-card{display:grid;gap:8px}
+    .log{display:grid;gap:8px;max-height:430px;overflow:auto;padding-bottom:4px}
+    .bottom-nav{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(720px,100%);padding:8px 10px calc(8px + var(--safe));background:rgba(6,43,23,.92);backdrop-filter:blur(12px);border-top:3px solid rgba(255,255,255,.22);display:grid;grid-template-columns:repeat(5,1fr);gap:6px;z-index:20}
+    .tab{min-height:52px;border:3px solid var(--ink);border-radius:15px;background:var(--cream);color:var(--ink);font-size:11px;font-weight:1000;box-shadow:0 3px 0 var(--ink)}
+    .tab.active{background:var(--gold)}
+    @media (min-width:680px){.players-grid{grid-template-columns:repeat(4,1fr)}.deed-grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:420px){.app{padding-left:10px;padding-right:10px}.two,.three{grid-template-columns:1fr}.filters{grid-template-columns:1fr}.big-stat{font-size:36px}.tab{font-size:10px}.deed-actions{grid-template-columns:1fr}.quick-stats{grid-template-columns:1fr 1fr}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="top"><h1>Monopoly Live</h1><p>Mobile banking and title deeds</p></header>
 
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+    <main id="joinScreen">
+      <section class="panel">
+        <div class="panel-head">Create or Join</div>
+        <div class="panel-body grid">
+          <div><label>Your Name</label><input id="nameInput" maxlength="18" placeholder="Example: Henry" /></div>
+          <div><label>Token Color</label><select id="colorInput"><option value="#c62828">Red</option><option value="#0f7a3b">Green</option><option value="#1f6feb">Blue</option><option value="#f6c344">Gold</option><option value="#7b2cbf">Purple</option><option value="#111111">Black</option></select></div>
+          <button class="btn green" onclick="createRoom()">Create Room</button>
+          <div class="notice">The room creator is the banker. Players can request to buy title deeds, but the banker must approve each purchase.</div>
+          <div><label>Access Code</label><input id="codeInput" maxlength="6" placeholder="Enter code" /></div>
+          <button class="btn white" onclick="joinRoom()">Join Room</button>
+        </div>
+      </section>
+    </main>
 
-const PORT = process.env.PORT || 3000;
-const MAX_PLAYERS = 8;
-const STARTING_MONEY = 1500;
-const FREE_PARKING_MIN = 100;
+    <main id="gameScreen" class="hidden">
+      <section class="card"><div class="room-row"><div><div class="player-sub">Access Code</div><div class="code" id="roomCode">------</div></div><button class="btn small gold" onclick="copyCode()">Copy</button></div></section>
+      <section class="card stat-main"><div class="label-light">Your Cash</div><div class="big-stat" id="myMoney">$0</div><div class="role" id="myRole">Player</div></section>
+      <section class="quick-stats"><div class="mini-stat"><span class="num" id="myPaid">$0</span><span class="txt">Paid</span></div><div class="mini-stat"><span class="num" id="myReceived">$0</span><span class="txt">Received</span></div></section>
+      <section class="action-card"><h3 class="action-title" id="actionTitle">Ready</h3><p class="action-text" id="actionText">View title deeds, request purchases, or pay rent.</p></section>
 
-app.use(express.static(path.join(__dirname, 'public')));
+      <section id="playersTab" class="tabPage">
+        <div class="panel"><div class="panel-head green">Players</div><div class="panel-body"><div class="players-grid" id="players"></div></div></div>
+        <div class="panel"><div class="panel-head" id="profileTitle">Player Details</div><div class="panel-body" id="profile"></div></div>
+      </section>
 
-const rooms = new Map();
-const socketPlayers = new Map();
+      <section id="deedsTab" class="tabPage hidden">
+        <div class="panel"><div class="panel-head gold">All Title Deeds</div><div class="panel-body">
+          <div class="filters"><select id="ownerFilter" onchange="renderDeeds()"><option value="all">All deeds</option><option value="available">Available only</option><option value="mine">Mine only</option></select><select id="groupFilter" onchange="renderDeeds()"><option value="all">All colors</option></select></div>
+          <div class="deed-grid" id="deeds"></div>
+        </div></div>
+      </section>
 
-const DEEDS = [
-  { name: 'Mediterranean Avenue', group: 'Brown', color: '#7b3f00', price: 60, rent: [2, 10, 30, 90, 160, 250], house: 50, mortgage: 30 },
-  { name: 'Baltic Avenue', group: 'Brown', color: '#7b3f00', price: 60, rent: [4, 20, 60, 180, 320, 450], house: 50, mortgage: 30 },
-  { name: 'Reading Railroad', group: 'Railroad', type: 'railroad', color: '#111111', price: 200, mortgage: 100 },
-  { name: 'Oriental Avenue', group: 'Light Blue', color: '#87ceeb', price: 100, rent: [6, 30, 90, 270, 400, 550], house: 50, mortgage: 50 },
-  { name: 'Vermont Avenue', group: 'Light Blue', color: '#87ceeb', price: 100, rent: [6, 30, 90, 270, 400, 550], house: 50, mortgage: 50 },
-  { name: 'Connecticut Avenue', group: 'Light Blue', color: '#87ceeb', price: 120, rent: [8, 40, 100, 300, 450, 600], house: 50, mortgage: 60 },
-  { name: 'St. Charles Place', group: 'Pink', color: '#d946ef', price: 140, rent: [10, 50, 150, 450, 625, 750], house: 100, mortgage: 70 },
-  { name: 'Electric Company', group: 'Utility', type: 'utility', color: '#60a5fa', price: 150, mortgage: 75 },
-  { name: 'States Avenue', group: 'Pink', color: '#d946ef', price: 140, rent: [10, 50, 150, 450, 625, 750], house: 100, mortgage: 70 },
-  { name: 'Virginia Avenue', group: 'Pink', color: '#d946ef', price: 160, rent: [12, 60, 180, 500, 700, 900], house: 100, mortgage: 80 },
-  { name: 'Pennsylvania Railroad', group: 'Railroad', type: 'railroad', color: '#111111', price: 200, mortgage: 100 },
-  { name: 'St. James Place', group: 'Orange', color: '#f97316', price: 180, rent: [14, 70, 200, 550, 750, 950], house: 100, mortgage: 90 },
-  { name: 'Tennessee Avenue', group: 'Orange', color: '#f97316', price: 180, rent: [14, 70, 200, 550, 750, 950], house: 100, mortgage: 90 },
-  { name: 'New York Avenue', group: 'Orange', color: '#f97316', price: 200, rent: [16, 80, 220, 600, 800, 1000], house: 100, mortgage: 100 },
-  { name: 'Kentucky Avenue', group: 'Red', color: '#dc2626', price: 220, rent: [18, 90, 250, 700, 875, 1050], house: 150, mortgage: 110 },
-  { name: 'Indiana Avenue', group: 'Red', color: '#dc2626', price: 220, rent: [18, 90, 250, 700, 875, 1050], house: 150, mortgage: 110 },
-  { name: 'Illinois Avenue', group: 'Red', color: '#dc2626', price: 240, rent: [20, 100, 300, 750, 925, 1100], house: 150, mortgage: 120 },
-  { name: 'B&O Railroad', group: 'Railroad', type: 'railroad', color: '#111111', price: 200, mortgage: 100 },
-  { name: 'Atlantic Avenue', group: 'Yellow', color: '#facc15', price: 260, rent: [22, 110, 330, 800, 975, 1150], house: 150, mortgage: 130 },
-  { name: 'Ventnor Avenue', group: 'Yellow', color: '#facc15', price: 260, rent: [22, 110, 330, 800, 975, 1150], house: 150, mortgage: 130 },
-  { name: 'Water Works', group: 'Utility', type: 'utility', color: '#60a5fa', price: 150, mortgage: 75 },
-  { name: 'Marvin Gardens', group: 'Yellow', color: '#facc15', price: 280, rent: [24, 120, 360, 850, 1025, 1200], house: 150, mortgage: 140 },
-  { name: 'Pacific Avenue', group: 'Green', color: '#16a34a', price: 300, rent: [26, 130, 390, 900, 1100, 1275], house: 200, mortgage: 150 },
-  { name: 'North Carolina Avenue', group: 'Green', color: '#16a34a', price: 300, rent: [26, 130, 390, 900, 1100, 1275], house: 200, mortgage: 150 },
-  { name: 'Pennsylvania Avenue', group: 'Green', color: '#16a34a', price: 320, rent: [28, 150, 450, 1000, 1200, 1400], house: 200, mortgage: 160 },
-  { name: 'Short Line', group: 'Railroad', type: 'railroad', color: '#111111', price: 200, mortgage: 100 },
-  { name: 'Park Place', group: 'Dark Blue', color: '#1d4ed8', price: 350, rent: [35, 175, 500, 1100, 1300, 1500], house: 200, mortgage: 175 },
-  { name: 'Boardwalk', group: 'Dark Blue', color: '#1d4ed8', price: 400, rent: [50, 200, 600, 1400, 1700, 2000], house: 200, mortgage: 200 }
-];
+      <section id="payTab" class="tabPage hidden">
+        <div class="panel"><div class="panel-head">Pay Money</div><div class="panel-body grid">
+          <div><label>Pay Player</label><select id="payTarget"></select></div>
+          <div><label>Amount</label><input id="payAmount" type="number" min="1" placeholder="Example: 50" inputmode="numeric" /></div>
+          <div><label>Reason Optional</label><input id="payNote" maxlength="60" placeholder="Rent, deal, correction..." /></div>
+          <button class="btn green" onclick="payPlayer()">Send Payment</button>
+        </div></div>
+        <div class="panel"><div class="panel-head gold">Bank / Free Parking</div><div class="panel-body grid">
+          <div><label>Amount</label><input id="bankPayAmount" type="number" min="1" placeholder="Example: 200" inputmode="numeric" /></div>
+          <button class="btn white" onclick="payBank()">Pay Bank</button><button class="btn gold" onclick="payFreeParking()">Pay Into Free Parking</button>
+          <div class="notice">Free Parking: <strong id="freeParking">$100</strong></div><button class="btn gold" onclick="collectFreeParking()">Collect Free Parking</button>
+        </div></div>
+        <div class="panel"><div class="panel-head green">Turn Control</div><div class="panel-body grid"><div class="notice">Current turn: <strong id="turnName">-</strong></div><button class="btn white" onclick="endTurn()">Next Turn</button></div></div>
+      </section>
 
-function roomCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-}
-function uid() { return Math.random().toString(36).slice(2, 10); }
-function cleanName(name, fallback) { return String(name || fallback || 'Player').trim().slice(0, 18) || fallback || 'Player'; }
-function cleanAmount(amount) { return Math.max(0, Math.floor(Number(amount) || 0)); }
-function money(n) { return '$' + Number(n || 0).toLocaleString(); }
+      <section id="bankTab" class="tabPage hidden">
+        <div class="panel" id="bankerControls"><div class="panel-head">Banker Controls</div><div class="panel-body grid">
+          <div id="purchaseRequests" class="grid"></div>
+          <div><label>Player</label><select id="bankerPlayer"></select></div><div><label>Amount</label><input id="bankerAmount" type="number" min="1" placeholder="Example: 100" inputmode="numeric" /></div>
+          <button class="btn green" onclick="bankerAdjust('add')">Give Money</button><button class="btn white" onclick="bankerAdjust('remove')">Remove Money</button>
+          <div><label>Starting Money</label><input id="startingMoney" type="number" min="1" value="1500" inputmode="numeric" /></div><button class="btn gold" onclick="setStartingMoney()">Set Everyone's Money</button>
+          <button class="btn white" onclick="bankerSetTurn()">Set Turn to Player</button><button class="btn" onclick="bankerResetRoom()">Reset Whole Room</button>
+        </div></div>
+        <div class="panel" id="notBankerNotice"><div class="panel-head gold">Banker Only</div><div class="panel-body"><div class="notice">Only the room creator can approve deed purchases and use banker controls.</div></div></div>
+      </section>
 
-function makePlayer({ name, color, isBanker = false }) {
-  return {
-    id: uid(), name: cleanName(name, isBanker ? 'Banker' : 'Player'), color: color || (isBanker ? '#c62828' : '#0f7a3b'),
-    isBanker, balance: STARTING_MONEY, paymentsMade: 0, paymentsReceived: 0, connected: true
-  };
-}
-function initialRoom(leader) {
-  return {
-    code: roomCode(), createdAt: Date.now(), currentTurnIndex: 0, freeParking: FREE_PARKING_MIN,
-    players: [leader],
-    properties: DEEDS.map(() => ({ ownerId: null, houses: 0, mortgaged: false })),
-    purchaseRequests: [],
-    lastAction: { title: 'Room created', text: `${leader.name} is the banker. Players can request title deeds.` },
-    settings: { startingMoney: STARTING_MONEY, freeParkingMinimum: FREE_PARKING_MIN },
-    log: [{ time: new Date().toLocaleTimeString(), text: `${leader.name} created the Monopoly room.` }]
-  };
-}
-function addLog(room, text) { room.log.unshift({ time: new Date().toLocaleTimeString(), text }); room.log = room.log.slice(0, 200); }
-function emitRoom(code) { const room = rooms.get(code); if (room) io.to(code).emit('state', { ...room, deeds: DEEDS }); }
-function getContext(socket) { const ctx = socketPlayers.get(socket.id); const room = ctx ? rooms.get(ctx.roomCode) : null; const player = room?.players.find(p => p.id === ctx.playerId); return { ctx, room, player }; }
-function currentPlayer(room) { return room.players[room.currentTurnIndex] || room.players[0]; }
-function requireBanker(player, cb) { if (!player?.isBanker) { cb?.({ ok: false, error: 'Only the banker can do that.' }); return false; } return true; }
-function ownerOf(room, index) { return room.players.find(p => p.id === room.properties[index]?.ownerId); }
-function propertyIndexesByGroup(group) { return DEEDS.map((d, i) => d.group === group && !d.type ? i : null).filter(i => i !== null); }
-function ownsFullColorSet(room, playerId, index) {
-  const deed = DEEDS[index];
-  if (!deed || deed.type) return false;
-  return propertyIndexesByGroup(deed.group).every(i => room.properties[i].ownerId === playerId);
-}
-function countOwnedType(room, playerId, type) { return room.properties.filter((p, i) => p.ownerId === playerId && DEEDS[i].type === type).length; }
-function calculateRent(room, index) {
-  const deed = DEEDS[index]; const prop = room.properties[index];
-  if (!deed || !prop || prop.mortgaged) return 0;
-  if (deed.rent) return deed.rent[prop.houses || 0];
-  if (deed.type === 'railroad') return [25, 50, 100, 200][Math.max(0, countOwnedType(room, prop.ownerId, 'railroad') - 1)];
-  if (deed.type === 'utility') return countOwnedType(room, prop.ownerId, 'utility') >= 2 ? 70 : 28;
-  return 0;
-}
-function nextTurn(room) {
-  if (!room.players.length) return;
-  room.currentTurnIndex = (room.currentTurnIndex + 1) % room.players.length;
-  const p = currentPlayer(room);
-  room.lastAction = { title: `${p.name}'s turn`, text: 'Use title deeds to buy, request approval, or pay rent.' };
-  addLog(room, `Turn moved to ${p.name}.`);
-}
+      <section id="logTab" class="tabPage hidden"><div class="panel"><div class="panel-head green">Game Log</div><div class="panel-body"><div class="log" id="log"></div></div></div></section>
+    </main>
+  </div>
 
-io.on('connection', socket => {
-  socket.on('createRoom', ({ name, color }, cb) => {
-    const leader = makePlayer({ name, color, isBanker: true }); const room = initialRoom(leader);
-    rooms.set(room.code, room); socket.join(room.code); socketPlayers.set(socket.id, { roomCode: room.code, playerId: leader.id });
-    cb?.({ ok: true, roomCode: room.code, playerId: leader.id }); emitRoom(room.code);
-  });
-  socket.on('joinRoom', ({ roomCode, name, color }, cb) => {
-    const code = String(roomCode || '').trim().toUpperCase(); const room = rooms.get(code);
-    if (!room) return cb?.({ ok: false, error: 'Room not found.' });
-    if (room.players.length >= MAX_PLAYERS) return cb?.({ ok: false, error: `Room already has ${MAX_PLAYERS} players.` });
-    const player = makePlayer({ name, color, isBanker: false }); player.balance = room.settings.startingMoney || STARTING_MONEY;
-    room.players.push(player); addLog(room, `${player.name} joined with ${money(player.balance)}.`);
-    socket.join(room.code); socketPlayers.set(socket.id, { roomCode: room.code, playerId: player.id });
-    cb?.({ ok: true, roomCode: room.code, playerId: player.id }); emitRoom(room.code);
-  });
-  socket.on('rejoin', ({ roomCode, playerId }, cb) => {
-    const room = rooms.get(roomCode); const player = room?.players.find(p => p.id === playerId);
-    if (!room || !player) return cb?.({ ok: false });
-    player.connected = true; socket.join(roomCode); socketPlayers.set(socket.id, { roomCode, playerId }); cb?.({ ok: true }); emitRoom(roomCode);
-  });
+  <nav class="bottom-nav hidden" id="bottomNav"><button class="tab active" onclick="setTab('players')">Players</button><button class="tab" onclick="setTab('deeds')">Deeds</button><button class="tab" onclick="setTab('pay')">Pay</button><button class="tab" onclick="setTab('bank')">Bank</button><button class="tab" onclick="setTab('log')">Log</button></nav>
 
-  socket.on('requestPurchase', ({ propertyIndex }, cb) => {
-    const { ctx, room, player } = getContext(socket); if (!room || !player) return cb?.({ ok: false, error: 'Not in a room.' });
-    const index = Number(propertyIndex); const deed = DEEDS[index]; const prop = room.properties[index];
-    if (!deed || !prop) return cb?.({ ok: false, error: 'Property not found.' });
-    if (prop.ownerId) return cb?.({ ok: false, error: 'That title deed is already owned.' });
-    if (player.balance < deed.price) return cb?.({ ok: false, error: 'You do not have enough money.' });
-    const existing = room.purchaseRequests.find(r => r.status === 'pending' && r.propertyIndex === index && r.playerId === player.id);
-    if (existing) return cb?.({ ok: false, error: 'You already requested this property.' });
-    room.purchaseRequests.unshift({ id: uid(), playerId: player.id, propertyIndex: index, status: 'pending', createdAt: Date.now() });
-    room.lastAction = { title: 'Purchase approval needed', text: `${player.name} requested to buy ${deed.name} for ${money(deed.price)}.` };
-    addLog(room, `${player.name} requested banker approval to buy ${deed.name}.`);
-    emitRoom(ctx.roomCode); cb?.({ ok: true });
-  });
-
-  socket.on('approvePurchase', ({ requestId }, cb) => {
-    const { ctx, room, player: banker } = getContext(socket); if (!room || !banker) return cb?.({ ok: false, error: 'Not in a room.' });
-    if (!requireBanker(banker, cb)) return;
-    const req = room.purchaseRequests.find(r => r.id === requestId); if (!req || req.status !== 'pending') return cb?.({ ok: false, error: 'Request not found.' });
-    const buyer = room.players.find(p => p.id === req.playerId); const deed = DEEDS[req.propertyIndex]; const prop = room.properties[req.propertyIndex];
-    if (!buyer || !deed || !prop) return cb?.({ ok: false, error: 'Request is invalid.' });
-    if (prop.ownerId) { req.status = 'denied'; return cb?.({ ok: false, error: 'Property is already owned.' }); }
-    if (buyer.balance < deed.price) return cb?.({ ok: false, error: `${buyer.name} does not have enough money anymore.` });
-    buyer.balance -= deed.price; prop.ownerId = buyer.id; req.status = 'approved';
-    room.lastAction = { title: 'Purchase approved', text: `${buyer.name} bought ${deed.name} for ${money(deed.price)}.` };
-    addLog(room, `Banker approved ${buyer.name}'s purchase of ${deed.name} for ${money(deed.price)}.`);
-    emitRoom(ctx.roomCode); cb?.({ ok: true });
-  });
-
-  socket.on('denyPurchase', ({ requestId }, cb) => {
-    const { ctx, room, player: banker } = getContext(socket); if (!room || !banker) return cb?.({ ok: false, error: 'Not in a room.' });
-    if (!requireBanker(banker, cb)) return;
-    const req = room.purchaseRequests.find(r => r.id === requestId); if (!req || req.status !== 'pending') return cb?.({ ok: false, error: 'Request not found.' });
-    const buyer = room.players.find(p => p.id === req.playerId); const deed = DEEDS[req.propertyIndex]; req.status = 'denied';
-    addLog(room, `Banker denied ${buyer?.name || 'a player'}'s request for ${deed?.name || 'a property'}.`);
-    emitRoom(ctx.roomCode); cb?.({ ok: true });
-  });
-
-  socket.on('payRent', ({ propertyIndex }, cb) => {
-    const { ctx, room, player: payer } = getContext(socket); if (!room || !payer) return cb?.({ ok: false, error: 'Not in a room.' });
-    const index = Number(propertyIndex); const deed = DEEDS[index]; const prop = room.properties[index]; const owner = ownerOf(room, index);
-    if (!deed || !prop || !owner) return cb?.({ ok: false, error: 'This deed is not owned.' });
-    if (owner.id === payer.id) return cb?.({ ok: false, error: 'You own this property.' });
-    const rent = calculateRent(room, index); if (!rent) return cb?.({ ok: false, error: 'No rent is due.' });
-    if (payer.balance < rent) return cb?.({ ok: false, error: 'You do not have enough money to pay this rent.' });
-    payer.balance -= rent; owner.balance += rent; payer.paymentsMade += rent; owner.paymentsReceived += rent;
-    room.lastAction = { title: 'Rent paid', text: `${payer.name} paid ${owner.name} ${money(rent)} for ${deed.name}.` };
-    addLog(room, `${payer.name} paid ${owner.name} ${money(rent)} rent for ${deed.name}.`);
-    emitRoom(ctx.roomCode); cb?.({ ok: true });
-  });
-
-  socket.on('payPlayer', ({ toId, amount, note }, cb) => {
-    const { ctx, room, player: payer } = getContext(socket); if (!room || !payer) return cb?.({ ok: false, error: 'Not in a room.' });
-    const recipient = room.players.find(p => p.id === toId); const n = cleanAmount(amount); const cleanNote = String(note || '').trim().slice(0, 60);
-    if (!recipient || recipient.id === payer.id) return cb?.({ ok: false, error: 'Choose another player.' });
-    if (!n) return cb?.({ ok: false, error: 'Enter a valid amount.' });
-    if (payer.balance < n) return cb?.({ ok: false, error: 'Not enough money.' });
-    payer.balance -= n; recipient.balance += n; payer.paymentsMade += n; recipient.paymentsReceived += n;
-    room.lastAction = { title: `${payer.name} paid ${recipient.name}`, text: `${payer.name} paid ${money(n)}${cleanNote ? ` for ${cleanNote}` : ''}.` };
-    addLog(room, `${payer.name} paid ${recipient.name} ${money(n)}${cleanNote ? ` — ${cleanNote}` : ''}.`);
-    emitRoom(ctx.roomCode); cb?.({ ok: true });
-  });
-
-  socket.on('payBank', ({ amount, note }, cb) => {
-    const { ctx, room, player } = getContext(socket); if (!room || !player) return cb?.({ ok: false, error: 'Not in a room.' });
-    const n = cleanAmount(amount); const cleanNote = String(note || '').trim().slice(0, 60);
-    if (!n) return cb?.({ ok: false, error: 'Enter a valid amount.' }); if (player.balance < n) return cb?.({ ok: false, error: 'Not enough money.' });
-    player.balance -= n; addLog(room, `${player.name} paid the bank ${money(n)}${cleanNote ? ` — ${cleanNote}` : ''}.`);
-    room.lastAction = { title: 'Bank paid', text: `${player.name} paid ${money(n)} to the bank.` };
-    emitRoom(ctx.roomCode); cb?.({ ok: true });
-  });
-
-  socket.on('payFreeParking', ({ amount }, cb) => {
-    const { ctx, room, player } = getContext(socket); if (!room || !player) return cb?.({ ok: false, error: 'Not in a room.' });
-    const n = cleanAmount(amount); if (!n) return cb?.({ ok: false, error: 'Enter a valid amount.' }); if (player.balance < n) return cb?.({ ok: false, error: 'Not enough money.' });
-    player.balance -= n; room.freeParking += n; room.lastAction = { title: 'Free Parking grew', text: `${player.name} added ${money(n)} to Free Parking.` };
-    addLog(room, `${player.name} paid ${money(n)} into Free Parking.`); emitRoom(ctx.roomCode); cb?.({ ok: true });
-  });
-
-  socket.on('collectFreeParking', cb => {
-    const { ctx, room, player } = getContext(socket); if (!room || !player) return cb?.({ ok: false, error: 'Not in a room.' });
-    const amount = Math.max(room.freeParking || 0, room.settings.freeParkingMinimum || FREE_PARKING_MIN); player.balance += amount; room.freeParking = room.settings.freeParkingMinimum || FREE_PARKING_MIN;
-    room.lastAction = { title: 'Free Parking collected', text: `${player.name} collected ${money(amount)}.` }; addLog(room, `${player.name} collected ${money(amount)} from Free Parking.`);
-    emitRoom(ctx.roomCode); cb?.({ ok: true });
-  });
-
-  socket.on('endTurn', cb => {
-    const { ctx, room, player } = getContext(socket); if (!room || !player) return cb?.({ ok: false, error: 'Not in a room.' });
-    const current = currentPlayer(room); if (current.id !== player.id && !player.isBanker) return cb?.({ ok: false, error: 'Only the current player or banker can end the turn.' });
-    nextTurn(room); emitRoom(ctx.roomCode); cb?.({ ok: true });
-  });
-
-  socket.on('addHouse', ({ propertyIndex }, cb) => {
-    const { ctx, room, player } = getContext(socket); if (!room || !player) return cb?.({ ok: false, error: 'Not in a room.' });
-    const index = Number(propertyIndex); const deed = DEEDS[index]; const prop = room.properties[index]; const owner = ownerOf(room, index);
-    if (!deed?.rent || !prop || !owner) return cb?.({ ok: false, error: 'Only owned color properties can have houses.' });
-    if (owner.id !== player.id && !player.isBanker) return cb?.({ ok: false, error: 'Only the owner or banker can add houses.' });
-    if (!ownsFullColorSet(room, owner.id, index)) return cb?.({ ok: false, error: 'You need the full color set before buying houses.' });
-    if (prop.houses >= 5) return cb?.({ ok: false, error: 'This property already has a hotel.' });
-    if (owner.balance < deed.house) return cb?.({ ok: false, error: 'Owner does not have enough money.' });
-    owner.balance -= deed.house; prop.houses++;
-    addLog(room, `${owner.name} bought ${prop.houses === 5 ? 'a hotel' : 'a house'} on ${deed.name} for ${money(deed.house)}.`);
-    emitRoom(ctx.roomCode); cb?.({ ok: true });
-  });
-
-  socket.on('sellHouse', ({ propertyIndex }, cb) => {
-    const { ctx, room, player } = getContext(socket); if (!room || !player) return cb?.({ ok: false, error: 'Not in a room.' });
-    const index = Number(propertyIndex); const deed = DEEDS[index]; const prop = room.properties[index]; const owner = ownerOf(room, index);
-    if (!deed?.rent || !prop || !owner || prop.houses <= 0) return cb?.({ ok: false, error: 'No house/hotel to sell.' });
-    if (owner.id !== player.id && !player.isBanker) return cb?.({ ok: false, error: 'Only the owner or banker can sell houses.' });
-    const refund = Math.floor(deed.house / 2); prop.houses--; owner.balance += refund;
-    addLog(room, `${owner.name} sold a house/hotel from ${deed.name} for ${money(refund)}.`); emitRoom(ctx.roomCode); cb?.({ ok: true });
-  });
-
-  socket.on('bankerAdjustMoney', ({ playerId, amount, mode }, cb) => {
-    const { ctx, room, player: banker } = getContext(socket); if (!room || !banker) return cb?.({ ok: false, error: 'Not in a room.' });
-    if (!requireBanker(banker, cb)) return;
-    const target = room.players.find(p => p.id === playerId); const n = cleanAmount(amount); if (!target || !n) return cb?.({ ok: false, error: 'Choose a player and valid amount.' });
-    if (mode === 'remove') { target.balance = Math.max(0, target.balance - n); addLog(room, `Banker removed ${money(n)} from ${target.name}.`); }
-    else { target.balance += n; addLog(room, `Banker gave ${target.name} ${money(n)}.`); }
-    room.lastAction = { title: 'Banker adjustment', text: `${target.name}'s balance was adjusted.` }; emitRoom(ctx.roomCode); cb?.({ ok: true });
-  });
-
-  socket.on('bankerSetStartingMoney', ({ amount }, cb) => {
-    const { ctx, room, player: banker } = getContext(socket); if (!room || !banker) return cb?.({ ok: false, error: 'Not in a room.' }); if (!requireBanker(banker, cb)) return;
-    const n = cleanAmount(amount); if (!n) return cb?.({ ok: false, error: 'Enter a valid amount.' }); room.settings.startingMoney = n; room.players.forEach(p => p.balance = n);
-    addLog(room, `Banker set every player to ${money(n)}.`); emitRoom(ctx.roomCode); cb?.({ ok: true });
-  });
-
-  socket.on('bankerResetRoom', cb => {
-    const { ctx, room, player: banker } = getContext(socket); if (!room || !banker) return cb?.({ ok: false, error: 'Not in a room.' }); if (!requireBanker(banker, cb)) return;
-    room.players.forEach(p => { p.balance = room.settings.startingMoney || STARTING_MONEY; p.paymentsMade = 0; p.paymentsReceived = 0; });
-    room.properties = DEEDS.map(() => ({ ownerId: null, houses: 0, mortgaged: false })); room.purchaseRequests = []; room.freeParking = FREE_PARKING_MIN; room.currentTurnIndex = 0;
-    addLog(room, 'Banker reset the whole room.'); emitRoom(ctx.roomCode); cb?.({ ok: true });
-  });
-
-  socket.on('bankerSetTurn', ({ playerId }, cb) => {
-    const { ctx, room, player: banker } = getContext(socket); if (!room || !banker) return cb?.({ ok: false, error: 'Not in a room.' }); if (!requireBanker(banker, cb)) return;
-    const index = room.players.findIndex(p => p.id === playerId); if (index < 0) return cb?.({ ok: false, error: 'Player not found.' });
-    room.currentTurnIndex = index; room.lastAction = { title: `${room.players[index].name}'s turn`, text: 'Banker changed the turn.' }; addLog(room, `Banker set the turn to ${room.players[index].name}.`); emitRoom(ctx.roomCode); cb?.({ ok: true });
-  });
-
-  socket.on('disconnect', () => {
-    const ctx = socketPlayers.get(socket.id); if (!ctx) return;
-    const room = rooms.get(ctx.roomCode); const player = room?.players.find(p => p.id === ctx.playerId); if (player) player.connected = false;
-    socketPlayers.delete(socket.id); if (room) emitRoom(ctx.roomCode);
-  });
-});
-
-server.listen(PORT, () => console.log(`Monopoly Live running on port ${PORT}`));
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io(); const $ = id => document.getElementById(id);
+    let state = null, deeds = [], meId = sessionStorage.getItem('monopolyPlayerId'), roomCode = sessionStorage.getItem('monopolyRoomCode'), selectedPlayerId = meId;
+    const money = n => '$' + Number(n || 0).toLocaleString();
+    const me = () => state?.players.find(p => p.id === meId);
+    const playerName = id => state?.players.find(p => p.id === id)?.name || 'Unowned';
+    const prop = i => state.properties[i];
+    const deed = i => deeds[i];
+    const alertErr = res => { if (res && !res.ok && res.error) alert(res.error); };
+    function saveSession(rc, pid){ roomCode=rc; meId=pid; selectedPlayerId=selectedPlayerId||meId; sessionStorage.setItem('monopolyRoomCode',rc); sessionStorage.setItem('monopolyPlayerId',pid); }
+    function createRoom(){ socket.emit('createRoom',{name:$('nameInput').value,color:$('colorInput').value},res=>{ if(!res.ok)return alertErr(res); saveSession(res.roomCode,res.playerId); }); }
+    function joinRoom(){ socket.emit('joinRoom',{roomCode:$('codeInput').value.trim().toUpperCase(),name:$('nameInput').value,color:$('colorInput').value},res=>{ if(!res.ok)return alertErr(res); saveSession(res.roomCode,res.playerId); }); }
+    socket.on('state', incoming => { state=incoming; deeds=incoming.deeds||[]; if(!selectedPlayerId||!state.players.some(p=>p.id===selectedPlayerId))selectedPlayerId=meId; showGame(); render(); });
+    if(roomCode&&meId){ socket.emit('rejoin',{roomCode,playerId:meId},res=>{ if(!res?.ok){sessionStorage.removeItem('monopolyRoomCode');sessionStorage.removeItem('monopolyPlayerId');} }); }
+    function showGame(){ $('joinScreen').classList.add('hidden'); $('gameScreen').classList.remove('hidden'); $('bottomNav').classList.remove('hidden'); }
+    function render(){ if(!state||!me())return; const mine=me(), current=state.players[state.currentTurnIndex]; $('roomCode').textContent=state.code; $('myMoney').textContent=money(mine.balance); $('myPaid').textContent=money(mine.paymentsMade); $('myReceived').textContent=money(mine.paymentsReceived); $('myRole').textContent=mine.isBanker?'Banker / Room Leader':'Player'; $('turnName').textContent=current?.name||'-'; $('freeParking').textContent=money(state.freeParking); $('actionTitle').textContent=state.lastAction?.title||'Ready'; $('actionText').textContent=state.lastAction?.text||'View title deeds, request purchases, or pay rent.'; $('bankerControls').classList.toggle('hidden',!mine.isBanker); $('notBankerNotice').classList.toggle('hidden',mine.isBanker); renderPlayers(); renderProfile(); renderSelects(); renderGroupFilter(); renderDeeds(); renderRequests(); renderLog(); }
+    function renderPlayers(){ const current=state.players[state.currentTurnIndex]; $('players').innerHTML=state.players.map(p=>`<button class="player-card ${p.id===selectedPlayerId?'active':''}" onclick="selectPlayer('${p.id}')"><div class="avatar" style="background:${p.color}">${p.name.slice(0,2).toUpperCase()}</div><div class="player-name">${p.name}</div><div class="player-sub">${money(p.balance)} • ${ownedIndexes(p.id).length} deeds</div>${p.isBanker?'<span class="tag banker">Banker</span>':''}${current?.id===p.id?'<span class="tag turn">Turn</span>':''}${p.connected===false?'<span class="tag offline">Offline</span>':''}</button>`).join(''); }
+    function selectPlayer(id){ selectedPlayerId=id; renderPlayers(); renderProfile(); }
+    function ownedIndexes(id){ return state.properties.map((p,i)=>p.ownerId===id?i:null).filter(i=>i!==null); }
+    function renderProfile(){ const p=state.players.find(x=>x.id===selectedPlayerId)||me(); selectedPlayerId=p.id; $('profileTitle').textContent=`${p.name}'s Profile`; const owned=ownedIndexes(p.id); $('profile').innerHTML=`<div class="quick-stats"><div class="mini-stat"><span class="num">${money(p.balance)}</span><span class="txt">Cash</span></div><div class="mini-stat"><span class="num">${owned.length}</span><span class="txt">Deeds</span></div></div>${owned.length?`<div class="deed-grid">${owned.map(i=>deedCard(i,false)).join('')}</div>`:'<div class="notice">No title deeds owned yet.</div>'}`; }
+    function renderSelects(){ const others=state.players.filter(p=>p.id!==meId), all=state.players; $('payTarget').innerHTML=others.map(p=>`<option value="${p.id}">${p.name}</option>`).join(''); $('bankerPlayer').innerHTML=all.map(p=>`<option value="${p.id}">${p.name}</option>`).join(''); }
+    function renderGroupFilter(){ const gf=$('groupFilter'); if(gf.dataset.ready)return; const groups=[...new Set(deeds.map(d=>d.group))]; gf.innerHTML='<option value="all">All colors</option>'+groups.map(g=>`<option value="${g}">${g}</option>`).join(''); gf.dataset.ready='1'; }
+    function renderDeeds(){ const ownerFilter=$('ownerFilter')?.value||'all', groupFilter=$('groupFilter')?.value||'all'; let list=deeds.map((_,i)=>i); if(ownerFilter==='available')list=list.filter(i=>!prop(i).ownerId); if(ownerFilter==='mine')list=list.filter(i=>prop(i).ownerId===meId); if(groupFilter!=='all')list=list.filter(i=>deed(i).group===groupFilter); $('deeds').innerHTML=list.map(i=>deedCard(i,true)).join('')||'<div class="notice">No title deeds match this filter.</div>'; }
+    function currentRent(i){ const d=deed(i), p=prop(i); if(p.mortgaged)return 0; if(d.rent)return d.rent[p.houses||0]; if(d.type==='railroad'){ const c=state.properties.filter((x,idx)=>x.ownerId===p.ownerId&&deed(idx).type==='railroad').length; return [25,50,100,200][Math.max(0,c-1)]||25; } if(d.type==='utility')return state.properties.filter((x,idx)=>x.ownerId===p.ownerId&&deed(idx).type==='utility').length>=2?70:28; return 0; }
+    function markers(i){ const h=prop(i).houses||0; if(!deed(i).rent||!prop(i).ownerId)return ''; if(h>=5)return '<div class="house-row"><div class="hotel"></div><span class="deed-meta">Hotel</span></div>'; return h?`<div class="house-row">${Array.from({length:h},()=>'<div class="house"></div>').join('')}</div>`:''; }
+    function deedCard(i, showAll){ const d=deed(i), p=prop(i), owner=state.players.find(x=>x.id===p.ownerId), isMine=p.ownerId===meId, unowned=!p.ownerId, rent=currentRent(i); return `<div class="deed-card"><div class="deed-color" style="background:${d.color}"></div><div class="deed-body"><div class="deed-title"><strong>${d.name}</strong><span class="deed-price">${money(d.price)}</span></div><div class="deed-meta">${d.group} • Owner: ${owner?owner.name:'Available'}${p.mortgaged?' • Mortgaged':''}<br>Current rent: <strong>${money(rent)}</strong>${d.house?` • House: ${money(d.house)}`:''} • Mortgage: ${money(d.mortgage)}</div>${markers(i)}${rentTable(i)}<div class="deed-actions">${unowned?`<button class="btn small green" onclick="requestPurchase(${i})">Request Buy</button>`:''}${owner&&!isMine?`<button class="btn small green" onclick="payRent(${i})">Pay Rent</button>`:''}${isMine||me().isBanker?`${d.rent?`<button class="btn small white" onclick="addHouse(${i})">Add House</button><button class="btn small white" onclick="sellHouse(${i})">Sell House</button>`:''}`:''}</div></div></div>`; }
+    function rentTable(i){ const d=deed(i); if(!d.rent)return `<table class="rent-table"><tr><td>Rent</td><td>${d.type==='railroad'?'$25 / $50 / $100 / $200':'$28 or $70 flat utility helper'}</td></tr></table>`; return `<table class="rent-table"><tr><td>Base</td><td>${money(d.rent[0])}</td></tr><tr><td>1 House</td><td>${money(d.rent[1])}</td></tr><tr><td>2 Houses</td><td>${money(d.rent[2])}</td></tr><tr><td>3 Houses</td><td>${money(d.rent[3])}</td></tr><tr><td>4 Houses</td><td>${money(d.rent[4])}</td></tr><tr><td>Hotel</td><td>${money(d.rent[5])}</td></tr></table>`; }
+    function renderRequests(){ const pending=(state.purchaseRequests||[]).filter(r=>r.status==='pending'); $('purchaseRequests').innerHTML=pending.length?pending.map(r=>`<div class="request-card"><strong>${playerName(r.playerId)} wants ${deed(r.propertyIndex).name}</strong><div class="deed-meta">Price: ${money(deed(r.propertyIndex).price)}</div><div class="two grid"><button class="btn small green" onclick="approvePurchase('${r.id}')">Approve</button><button class="btn small" onclick="denyPurchase('${r.id}')">Deny</button></div></div>`).join(''):'<div class="notice">No pending purchase requests.</div>'; }
+    function setTab(tab){ document.querySelectorAll('.tabPage').forEach(p=>p.classList.add('hidden')); document.querySelectorAll('.bottom-nav .tab').forEach(b=>b.classList.remove('active')); const map={players:0,deeds:1,pay:2,bank:3,log:4}; document.querySelectorAll('.bottom-nav .tab')[map[tab]].classList.add('active'); $(tab+'Tab').classList.remove('hidden'); window.scrollTo({top:0,behavior:'smooth'}); }
+    function emit(event,data,clearIds=[]){ socket.emit(event,data,res=>{ alertErr(res); if(res?.ok)clearIds.forEach(id=>$(id).value=''); }); }
+    function requestPurchase(i){ emit('requestPurchase',{propertyIndex:i}); }
+    function approvePurchase(id){ emit('approvePurchase',{requestId:id}); }
+    function denyPurchase(id){ emit('denyPurchase',{requestId:id}); }
+    function payRent(i){ if(confirm(`Pay ${money(currentRent(i))} rent for ${deed(i).name}?`))emit('payRent',{propertyIndex:i}); }
+    function addHouse(i){ emit('addHouse',{propertyIndex:i}); }
+    function sellHouse(i){ emit('sellHouse',{propertyIndex:i}); }
+    function payPlayer(){ emit('payPlayer',{toId:$('payTarget').value,amount:$('payAmount').value,note:$('payNote').value},['payAmount','payNote']); }
+    function payBank(){ emit('payBank',{amount:$('bankPayAmount').value,note:'Bank payment'},['bankPayAmount']); }
+    function payFreeParking(){ emit('payFreeParking',{amount:$('bankPayAmount').value},['bankPayAmount']); }
+    function collectFreeParking(){ emit('collectFreeParking'); }
+    function endTurn(){ emit('endTurn'); }
+    function bankerAdjust(mode){ emit('bankerAdjustMoney',{playerId:$('bankerPlayer').value,amount:$('bankerAmount').value,mode},['bankerAmount']); }
+    function setStartingMoney(){ emit('bankerSetStartingMoney',{amount:$('startingMoney').value}); }
+    function bankerResetRoom(){ if(confirm('Reset money, title deeds, and requests?'))emit('bankerResetRoom'); }
+    function bankerSetTurn(){ emit('bankerSetTurn',{playerId:$('bankerPlayer').value}); }
+    function renderLog(){ $('log').innerHTML=(state.log||[]).map(item=>`<div class="log-item"><strong>${item.time}</strong><br>${item.text}</div>`).join(''); }
+    function copyCode(){ navigator.clipboard.writeText(state.code); alert('Copied '+state.code); }
+  </script>
+</body>
+</html>
