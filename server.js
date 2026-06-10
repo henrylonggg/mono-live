@@ -70,6 +70,7 @@ function initialRoom(leader) {
     properties: DEEDS.map(() => ({ ownerId: null, houses: 0, mortgaged: false })),
     purchaseRequests: [],
     freeParkingRequests: [],
+    tradeOffers: [],
     lastAction: { title: 'Room created', text: `${leader.name} is the banker. Players can request title deeds.` },
     settings: { startingMoney: STARTING_MONEY, freeParkingMinimum: FREE_PARKING_MIN },
     log: [{ time: new Date().toLocaleTimeString(), text: `${leader.name} created the Monopoly room.` }]
@@ -95,6 +96,17 @@ function calculateRent(room, index) {
   if (deed.type === 'railroad') return [25, 50, 100, 200][Math.max(0, countOwnedType(room, prop.ownerId, 'railroad') - 1)];
   if (deed.type === 'utility') return countOwnedType(room, prop.ownerId, 'utility') >= 2 ? 70 : 28;
   return 0;
+}
+
+function cleanPropertyIndexes(value) {
+  const arr = Array.isArray(value) ? value : [];
+  return [...new Set(arr.map(Number).filter(i => Number.isInteger(i) && i >= 0 && i < DEEDS.length))];
+}
+function validateTradeSide(room, ownerId, indexes) {
+  return indexes.every(i => room.properties[i]?.ownerId === ownerId);
+}
+function activeTradeFor(room, fromId, toId) {
+  return room.tradeOffers?.find(t => t.status === 'pending' && t.fromId === fromId && t.toId === toId);
 }
 function nextTurn(room) {
   if (!room.players.length) return;
@@ -261,6 +273,79 @@ io.on('connection', socket => {
     emitRoom(ctx.roomCode); cb?.({ ok: true });
   });
 
+
+  socket.on('createTradeOffer', ({ toId, giveMoney, receiveMoney, giveProperties, receiveProperties, analyzerScore, analyzerLabel }, cb) => {
+    const { ctx, room, player } = getContext(socket);
+    if (!room || !player) return cb?.({ ok: false, error: 'Not in a room.' });
+    room.tradeOffers = room.tradeOffers || [];
+    const target = room.players.find(p => p.id === toId);
+    const gm = cleanAmount(giveMoney);
+    const rm = cleanAmount(receiveMoney);
+    const give = cleanPropertyIndexes(giveProperties);
+    const receive = cleanPropertyIndexes(receiveProperties);
+    if (!target || target.id === player.id) return cb?.({ ok: false, error: 'Choose another player to trade with.' });
+    if (!gm && !rm && !give.length && !receive.length) return cb?.({ ok: false, error: 'Add money or title deeds to the trade.' });
+    if (player.balance < gm) return cb?.({ ok: false, error: 'You do not have enough money for your offer.' });
+    if (target.balance < rm) return cb?.({ ok: false, error: `${target.name} does not have enough money for that request.` });
+    if (!validateTradeSide(room, player.id, give)) return cb?.({ ok: false, error: 'You can only offer title deeds you own.' });
+    if (!validateTradeSide(room, target.id, receive)) return cb?.({ ok: false, error: `You can only request title deeds ${target.name} owns.` });
+    if (activeTradeFor(room, player.id, target.id)) return cb?.({ ok: false, error: `You already have a pending trade with ${target.name}.` });
+    const offer = {
+      id: uid(), fromId: player.id, toId: target.id,
+      giveMoney: gm, receiveMoney: rm, giveProperties: give, receiveProperties: receive,
+      analyzerScore: Math.max(0, Math.min(100, Math.round(Number(analyzerScore) || 50))),
+      analyzerLabel: String(analyzerLabel || 'Neutral').slice(0, 20),
+      status: 'pending', createdAt: Date.now()
+    };
+    room.tradeOffers.unshift(offer);
+    room.lastAction = { title: 'Trade offer sent', text: `${player.name} sent ${target.name} a trade offer.` };
+    addLog(room, `${player.name} offered a trade to ${target.name}. Analyzer: ${offer.analyzerScore}/100 ${offer.analyzerLabel}.`);
+    emitRoom(ctx.roomCode); cb?.({ ok: true });
+  });
+
+  socket.on('acceptTradeOffer', ({ tradeId }, cb) => {
+    const { ctx, room, player } = getContext(socket);
+    if (!room || !player) return cb?.({ ok: false, error: 'Not in a room.' });
+    room.tradeOffers = room.tradeOffers || [];
+    const trade = room.tradeOffers.find(t => t.id === tradeId);
+    if (!trade || trade.status !== 'pending') return cb?.({ ok: false, error: 'Trade offer not found.' });
+    if (trade.toId !== player.id) return cb?.({ ok: false, error: 'Only the receiving player can accept this trade.' });
+    const from = room.players.find(p => p.id === trade.fromId);
+    const to = room.players.find(p => p.id === trade.toId);
+    if (!from || !to) return cb?.({ ok: false, error: 'Trade player not found.' });
+    if (from.balance < trade.giveMoney) return cb?.({ ok: false, error: `${from.name} no longer has enough money.` });
+    if (to.balance < trade.receiveMoney) return cb?.({ ok: false, error: `You no longer have enough money.` });
+    if (!validateTradeSide(room, from.id, trade.giveProperties)) return cb?.({ ok: false, error: `${from.name} no longer owns one of the offered deeds.` });
+    if (!validateTradeSide(room, to.id, trade.receiveProperties)) return cb?.({ ok: false, error: `You no longer own one of the requested deeds.` });
+
+    from.balance = from.balance - trade.giveMoney + trade.receiveMoney;
+    to.balance = to.balance - trade.receiveMoney + trade.giveMoney;
+    trade.giveProperties.forEach(i => { room.properties[i].ownerId = to.id; room.properties[i].houses = 0; });
+    trade.receiveProperties.forEach(i => { room.properties[i].ownerId = from.id; room.properties[i].houses = 0; });
+    trade.status = 'accepted';
+    room.tradeOffers.forEach(t => {
+      if (t.status === 'pending' && t.id !== trade.id) {
+        const touched = [...trade.giveProperties, ...trade.receiveProperties];
+        if (touched.some(i => t.giveProperties.includes(i) || t.receiveProperties.includes(i))) t.status = 'expired';
+      }
+    });
+    room.lastAction = { title: 'Trade accepted', text: `${to.name} accepted ${from.name}'s trade offer.` };
+    addLog(room, `${to.name} accepted a trade with ${from.name}.`);
+    emitRoom(ctx.roomCode); cb?.({ ok: true });
+  });
+
+  socket.on('denyTradeOffer', ({ tradeId }, cb) => {
+    const { ctx, room, player } = getContext(socket);
+    if (!room || !player) return cb?.({ ok: false, error: 'Not in a room.' });
+    room.tradeOffers = room.tradeOffers || [];
+    const trade = room.tradeOffers.find(t => t.id === tradeId);
+    if (!trade || trade.status !== 'pending') return cb?.({ ok: false, error: 'Trade offer not found.' });
+    if (trade.toId !== player.id && trade.fromId !== player.id && !player.isBanker) return cb?.({ ok: false, error: 'You cannot change this trade.' });
+    trade.status = trade.toId === player.id ? 'denied' : 'cancelled';
+    addLog(room, `${player.name} ${trade.status} a trade offer.`);
+    emitRoom(ctx.roomCode); cb?.({ ok: true });
+  });
+
   socket.on('endTurn', cb => {
     const { ctx, room, player } = getContext(socket); if (!room || !player) return cb?.({ ok: false, error: 'Not in a room.' });
     const current = currentPlayer(room); if (current.id !== player.id && !player.isBanker) return cb?.({ ok: false, error: 'Only the current player or banker can end the turn.' });
@@ -307,7 +392,7 @@ io.on('connection', socket => {
   socket.on('bankerResetRoom', cb => {
     const { ctx, room, player: banker } = getContext(socket); if (!room || !banker) return cb?.({ ok: false, error: 'Not in a room.' }); if (!requireBanker(banker, cb)) return;
     room.players.forEach(p => { p.balance = room.settings.startingMoney || STARTING_MONEY; p.paymentsMade = 0; p.paymentsReceived = 0; });
-    room.properties = DEEDS.map(() => ({ ownerId: null, houses: 0, mortgaged: false })); room.purchaseRequests = []; room.freeParkingRequests = []; room.freeParking = FREE_PARKING_MIN; room.currentTurnIndex = 0;
+    room.properties = DEEDS.map(() => ({ ownerId: null, houses: 0, mortgaged: false })); room.purchaseRequests = []; room.freeParkingRequests = []; room.tradeOffers = []; room.freeParking = FREE_PARKING_MIN; room.currentTurnIndex = 0;
     addLog(room, 'Banker reset the whole room.'); emitRoom(ctx.roomCode); cb?.({ ok: true });
   });
 
